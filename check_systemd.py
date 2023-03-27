@@ -61,17 +61,21 @@ import re
 import subprocess
 import typing
 
-import nagiosplugin
-from nagiosplugin.check import Check
-from nagiosplugin.context import Context, ScalarContext
-from nagiosplugin.error import CheckError
-from nagiosplugin.metric import Metric
-from nagiosplugin.performance import Performance
-from nagiosplugin.range import Range
-from nagiosplugin.resource import Resource
-from nagiosplugin.result import Result, Results
-from nagiosplugin.state import Critical, Ok, ServiceState, Warn
-from nagiosplugin.summary import Summary
+try:
+    import nagiosplugin
+    from nagiosplugin.check import Check
+    from nagiosplugin.context import Context, ScalarContext
+    from nagiosplugin.error import CheckError
+    from nagiosplugin.metric import Metric
+    from nagiosplugin.performance import Performance
+    from nagiosplugin.range import Range
+    from nagiosplugin.resource import Resource
+    from nagiosplugin.result import Result, Results
+    from nagiosplugin.state import Critical, Ok, ServiceState, Warn
+    from nagiosplugin.summary import Summary
+except ImportError:
+    print("Failed to import the NagiosPlugin library.")
+    exit(3)
 
 __version__: str = "2.3.1"
 
