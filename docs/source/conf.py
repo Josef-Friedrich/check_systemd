@@ -1,6 +1,7 @@
 import sphinx_rtd_theme
 
-import check_systemd
+# GLib.PGError: Could not connect: No such file or directory
+# import check_systemd
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
@@ -19,8 +20,10 @@ master_doc = "index"
 project = "check_systemd"
 copyright = "2020, Josef Friedrich"
 author = "Josef Friedrich"
-version = check_systemd.__version__
-release = check_systemd.__version__
+# version = check_systemd.__version__
+# release = check_systemd.__version__
+version = '2.3.1'
+release = '2.3.1'
 language = "en"
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "sphinx"
