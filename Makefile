@@ -21,8 +21,8 @@ test:
 test_38:
 	tox -e py38
 
-doc:
-	tox -e docs
+docs:
+	poetry run tox -e docs
 	xdg-open .tox/docs/tmp/html/index.html
 
-.PHONY: build upload test readme doc
+.PHONY: build upload test readme docs
