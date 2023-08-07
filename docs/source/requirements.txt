@@ -1,3 +1,5 @@
+# https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
+
 Sphinx==6.2.1
 sphinx-rtd-theme==1.2.2
 sphinx-autodoc-typehints==1.22.0
