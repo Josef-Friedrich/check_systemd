@@ -23,6 +23,6 @@ test_38:
 
 docs:
 	poetry run tox -e docs
-	xdg-open .tox/docs/tmp/html/index.html
+	xdg-open docs/_build/index.html
 
 .PHONY: build upload test readme docs
