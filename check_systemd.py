@@ -77,7 +77,7 @@ except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
 
-__version__: str = "2.3.1"
+__version__: str = "2.3.2"
 
 
 is_gi = True
