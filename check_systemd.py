@@ -77,7 +77,7 @@ except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
 
-__version__: str = "2.3.1"
+__version__: str = "2.3.2"
 
 
 is_gi = True
@@ -1442,12 +1442,12 @@ def main():
     tasks: typing.List[object] = [
         UnitsResource(),
         UnitsContext(),
+        StartupTimeResource(),
         SystemdSummary(),
     ]
 
     if opts.scope_startup_time:
         tasks += [
-            StartupTimeResource(),
             StartupTimeContext(),
         ]
 
