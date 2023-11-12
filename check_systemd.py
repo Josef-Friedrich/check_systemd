@@ -1442,14 +1442,10 @@ def main():
     tasks: typing.List[object] = [
         UnitsResource(),
         UnitsContext(),
-        StartupTimeResource(),
         SystemdSummary(),
+        StartupTimeResource(),
+        StartupTimeContext(),
     ]
-
-    if opts.scope_startup_time:
-        tasks += [
-            StartupTimeContext(),
-        ]
 
     if opts.scope_timers:
         tasks += [
