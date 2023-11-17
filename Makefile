@@ -6,9 +6,6 @@ upload:
 	pip3 install twine
 	twine upload --skip-existing dist/*
 
-readme:
-	tox -e py38 -- test/test_readme.py
-
 test:
 	pyenv update
 	pyenv install --skip-existing 3.6.13

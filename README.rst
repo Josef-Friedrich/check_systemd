@@ -52,8 +52,9 @@ Command line interface
     usage: check_systemd [-h] [-v] [-V] [-I REGEXP] [-u UNIT_NAME]
                          [--include-type UNIT_TYPE [UNIT_TYPE ...]] [-e REGEXP]
                          [--exclude-unit UNIT_NAME [UNIT_NAME ...]]
-                         [--exclude-type UNIT_TYPE] [-t] [-W SECONDS] [-C SECONDS]
-                         [-n] [-w SECONDS] [-c SECONDS] [--dbus | --cli] [-P | -p]
+                         [--exclude-type UNIT_TYPE] [--required REQUIRED_STATE] [-t]
+                         [-W SECONDS] [-C SECONDS] [-n] [-w SECONDS] [-c SECONDS]
+                         [--dbus | --cli] [--user] [-P | -p]
 
     Copyright (c) 2014-18 Andrea Briganti <kbytesys@gmail.com>
     Copyright (c) 2019-21 Josef Friedrich <josef@friedrich.rocks>
@@ -71,9 +72,9 @@ Command line interface
 
       -I REGEXP, --include REGEXP
                             Include systemd units to the checks. This option can be
-                            applied multiple times, for example: -i mnt-data.mount
-                            -i task.service. Regular expressions can be used to
-                            include multiple units at once, for example: -e
+                            applied multiple times, for example: -I mnt-data.mount
+                            -I task.service. Regular expressions can be used to
+                            include multiple units at once, for example: -i
                             'user@\d+\.service'. For more informations see the
                             Python documentation about regular expressions
                             (https://docs.python.org/3/library/re.html).
@@ -93,6 +94,9 @@ Command line interface
                             Name of the systemd unit that is being tested.
       --exclude-type UNIT_TYPE
                             One or more unit types (for example: 'service', 'timer')
+      --required REQUIRED_STATE
+                            Set the state that the systemd unit must have (for
+                            example: active, inactive)
 
     Timers related options:
       -t, --timers, --dead-timers
@@ -120,10 +124,10 @@ Command line interface
                             triggered.
       -w SECONDS, --warning SECONDS
                             Startup time in seconds to result in a warning status.
-                            Thedefault is 60 seconds.
+                            The default is 60 seconds.
       -c SECONDS, --critical SECONDS
                             Startup time in seconds to result in a critical status.
-                            Thedefault is 120 seconds.
+                            The default is 120 seconds.
 
     Monitoring data acquisition:
       --dbus                Use the systemd’s D-Bus API instead of parsing the text
@@ -133,6 +137,7 @@ Command line interface
       --cli                 Use the text output of serveral systemd command line
                             interface (cli) binaries to gather the required data for
                             the monitoring process.
+      --user                Also show user (systemctl --user) units.
 
     Performance data:
       -P, --performance-data
