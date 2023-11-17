@@ -77,7 +77,7 @@ except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
 
-__version__: str = "2.3.2"
+__version__: str = "2.4.0"
 
 
 is_gi = True
@@ -1149,7 +1149,7 @@ def get_argparser():
         ),  # noqa: E501
         description="Copyright (c) 2014-18 Andrea Briganti "
         "<kbytesys@gmail.com>\n"  # noqa: E251
-        "Copyright (c) 2019-21 Josef Friedrich <josef@friedrich.rocks>\n"
+        "Copyright (c) 2019-23 Josef Friedrich <josef@friedrich.rocks>\n"
         "\n"
         "Nagios / Icinga monitoring plugin to check systemd.\n",  # noqa: E501
         epilog="Performance data:\n"  # noqa: E251
