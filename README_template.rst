@@ -2,11 +2,6 @@
 
 {{ badge.github_workflow() }}
 
-Please use the latest stable release v2.3.1 and not the current master
-branch. The plugin is currently being rewritten so that it can collect
-systemd monitoring data not only via the command line interface, but
-also via the D-Bus API.
-
 check_systemd
 =============
 
