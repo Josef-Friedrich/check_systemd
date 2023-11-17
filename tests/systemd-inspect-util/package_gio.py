@@ -53,7 +53,7 @@ def collect_properties_of_object(
 
 
 def list_units(unit_type=None, properties=None):
-    for (name, _, _, _, _, _, object_path, _, _, _) in dbus.ListUnits():
+    for name, _, _, _, _, _, object_path, _, _, _ in dbus.ListUnits():
         if unit_type and not utils.is_unit_type(name, unit_type):
             continue
         print(name)

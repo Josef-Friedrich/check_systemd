@@ -63,7 +63,6 @@ def collect_properties(unit_name: str) -> dict:
 def list_units(unit_type=None, properties=None):
     units = collect_all_units()
     for unit_name in units:
-
         if unit_type and not utils.is_unit_type(unit_name, unit_type):
             continue
         print(unit_name)

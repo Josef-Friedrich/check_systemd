@@ -685,7 +685,6 @@ class UnitNameFilter:
           expressions (``exclude=('.*service', '.*mount')``).
         """
         for name in self.__unit_names:
-
             if include and not match_multiple(name, include):
                 name = None
 
@@ -810,7 +809,7 @@ class DbusUnitCache(UnitCache):
     def __init__(self):
         super().__init__()
         all_units = dbus_manager.manager.ListUnits()
-        for (name, _, load_state, active_state, sub_state, _, _, _, _, _) in all_units:
+        for name, _, load_state, active_state, sub_state, _, _, _, _, _ in all_units:
             self.add_unit(
                 name=name,
                 active_state=active_state,
@@ -922,7 +921,6 @@ class TimersResource(Resource):
                     continue
 
                 if row["next"] == "n/a":
-
                     if row["passed"] == "n/a":
                         state = Critical
                     else:

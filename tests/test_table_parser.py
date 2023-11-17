@@ -18,9 +18,9 @@ class TestTableParser(unittest.TestCase):
         parser = get_parser()
         self.assertIn("description", parser.header_row)
         self.assertIn("systemd-tmpfiles-clean.timer", parser.body_rows[-1])
-        self.assertEquals([2, 111, 10, 9, 10], parser.column_lengths)
+        self.assertEqual([2, 111, 10, 9, 10], parser.column_lengths)
 
-        self.assertEquals(
+        self.assertEqual(
             ["", "unit", "load", "active", "sub", "description"], parser.columns
         )
 
