@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.4.0] - 2023-11-17
+## [3.0.0] - 2023-11-18
 
 ### Added
 
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have better control over which units should be selected for testing.
 - A new entry was added to the performance data: `data_source=cli` or
   `data_source=dbus`
-- Add example `icinga2` configuration for command (#23)
+- Add example `icinga2` configuration for the plugin (#23)
 - New option to query user units (`--user`) (#22)
 - New option `--required` to set the state that the systemd unit must have (#17)
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The options `--dead-timers`, `--dead-timers-warning` and
   `--dead-timers-critical` have been renamed to `--timers`,
-  `--timers-warning` and `--timers-critical`
+  `--timers-warning` and `--timers-critical`.
 - In the command line help, the options have been grouped according to
   their monitoring scope.
 - Always return perfdata for `startup_time` even with `-n` (#27)
@@ -147,3 +147,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added an --exclude option to exclude some systemd units from the checks
+
+## [1.2.0] - 2018-07-31
+
+## [1.1.1] - 2017-07-14
+
+## [1.1.0] - 2016-09-26
+
+## [1.0.4] - 2016-09-01
+
+## [1.0.2] - 2015-07-30
+
+## [1.0.1] - 2015-07-15

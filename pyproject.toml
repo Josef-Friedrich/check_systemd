@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "check_systemd"
-version = "2.4.0"
+version = "3.0.0"
 description = "Nagios / Icinga monitoring plugin to check systemd for failed units."
 authors = ["Josef Friedrich <josef@friedrich.rocks>"]
 readme = "README.rst"

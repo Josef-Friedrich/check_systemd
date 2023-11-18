@@ -18,12 +18,12 @@ source_suffix = ".rst"
 master_doc = "index"
 
 project = "check_systemd"
-copyright = "2020, Josef Friedrich"
+copyright = "2023, Josef Friedrich"
 author = "Josef Friedrich"
 # version = check_systemd.__version__
 # release = check_systemd.__version__
-version = "2.3.1"
-release = "2.3.1"
+version = "3.0.0"
+release = "3.0.0"
 language = "en"
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "sphinx"
