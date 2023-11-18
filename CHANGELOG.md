@@ -87,3 +87,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Parse milliseconds in timespan strings (#3)
+
+## [2.0.8] - 2019-05-26
+
+### Fixed
+
+- Boot not finished
+
+## [2.0.7] - 2019-05-26
+
+## Added
+
+- Tests to test bootup not finisched
+
+## [2.0.6] - 2019-04-13
+
+### Added
+
+- Documentation
+
+### Fixed
+
+- Version number
+
+## [2.0.5] - 2019-04-13
+
+### Fixed
+
+- `start_time` performance data
+
+## [2.0.4] - 2019-04-08
+
+### Fixed
+
+- startup time on raspbian
+
+## [2.0.3] - 2019-04-07
+
+### Added
+
+- New option `--version`
+- Check startup time
+- performance data
+
+## [2.0.2] - 2019-04-06
+
+### Fixed
+
+- Fix setup.py
+
+## [2.0.1] - 2019-04-06
+
+### Fixed
+
+- Fix setup.py
+
+## [2.0.0] - 2019-04-06
+
+### Added
+
+- Added an --exclude option to exclude some systemd units from the checks
