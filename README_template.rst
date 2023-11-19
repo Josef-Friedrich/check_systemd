@@ -19,7 +19,7 @@ Installation
 
 ::
 
-   pip3 install check_systemd
+   pip install check_systemd
 
 Packages
 --------
@@ -28,12 +28,16 @@ Packages
    (`package <https://packages.debian.org/search?keywords=monitoring%2Dplugins%2Dsystemd>`__,
    `source
    code <https://salsa.debian.org/python-team/packages/monitoring-plugins-systemd/-/tree/debian/master/debian>`__):
-   in unstable
+   ``apt install monitoring-plugins-systemd``
 -  NixOS
    (`package <https://search.nixos.org/packages?channel=unstable&query=check_systemd>`__,
    `source
    code <https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/servers/monitoring/nagios/plugins/check_systemd.nix>`__):
    ``nix-env -iA nixos.check_systemd``
+-  Fedora
+   (`package <https://packages.fedoraproject.org/pkgs/nagios-plugins-systemd/nagios-plugins-systemd/>`__,
+   `source code <https://src.fedoraproject.org/rpms/nagios-plugins-systemd>`__):
+   ``dnf install nagios-plugins-systemd``
 
 Command line interface
 ----------------------

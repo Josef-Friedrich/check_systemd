@@ -19,4 +19,7 @@ docs:
 	poetry run tox -e docs
 	xdg-open docs/_build/index.html
 
+readme:
+	poetry run tox -e readme
+
 .PHONY: build upload test readme docs
