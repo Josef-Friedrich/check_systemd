@@ -38,6 +38,10 @@ Packages
    `source
    code <https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/servers/monitoring/nagios/plugins/check_systemd.nix>`__):
    ``nix-env -iA nixos.check_systemd``
+-  Fedora
+   (`package <https://packages.fedoraproject.org/pkgs/nagios-plugins-systemd/nagios-plugins-systemd/>`__,
+   `source code <https://src.fedoraproject.org/rpms/nagios-plugins-systemd>`__):
+   ``dnf install nagios-plugins-systemd``
 
 Command line interface
 ----------------------
