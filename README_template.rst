@@ -24,8 +24,20 @@ Installation
 Packages
 --------
 
+``check_systemd`` on `repology.org <https://repology.org/project/check-systemd/related>`__.
+
+-  archlinux
+   (`package <https://aur.archlinux.org/packages/check_systemd>`__,
+   `source
+   code <https://aur.archlinux.org/check_systemd.git>`__):
+   ``yaourt -S check_systemd``
+-  Ubuntu
+   (`package <https://packages.ubuntu.com/search?keywords=monitoring-plugins-systemd&searchon=names>`__,
+   `source
+   code <https://git.launchpad.net/ubuntu/+source/monitoring-plugins-systemd>`__):
+   ``apt install monitoring-plugins-systemd``
 -  Debian
-   (`package <https://packages.debian.org/search?keywords=monitoring%2Dplugins%2Dsystemd>`__,
+   (`package <https://packages.debian.org/search?keywords=monitoring-plugins-systemd>`__,
    `source
    code <https://salsa.debian.org/python-team/packages/monitoring-plugins-systemd/-/tree/debian/master/debian>`__):
    ``apt install monitoring-plugins-systemd``
