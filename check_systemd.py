@@ -1184,6 +1184,16 @@ def get_argparser():
     )
 
     units.add_argument(
+        "-i",
+        "--ignore-inactive-state",
+        action="store_true",
+        help="Ignore an inactive state on a specific unit. Oneshot services "
+        "for example are only active while running and not enabled. "
+        "The rest of the time they are inactive. This option has only "
+        "an affect if it is used with the option -u.",
+    )
+
+    units.add_argument(
         "-I",
         "--include",
         metavar="REGEXP",
