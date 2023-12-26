@@ -1,6 +1,6 @@
 import unittest
 
-from .helper import execute_main
+from tests.helper import execute_main
 
 
 def execute_with_opt_u(argv, list_units="ok"):

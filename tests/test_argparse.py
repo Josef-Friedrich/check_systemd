@@ -8,8 +8,7 @@ from contextlib import redirect_stderr
 
 import check_systemd
 from check_systemd import get_argparser
-
-from .helper import execute_main
+from tests.helper import execute_main
 
 
 class TestFromFunction(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from .helper import execute_main
+from tests.helper import execute_main
 
 
 def execute(argv, units_suffix="ok"):

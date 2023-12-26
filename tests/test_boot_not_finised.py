@@ -1,6 +1,6 @@
 import unittest
 
-from .helper import MPopen, execute_main
+from tests.helper import MPopen, execute_main
 
 
 class TestBootupNotFinished(unittest.TestCase):

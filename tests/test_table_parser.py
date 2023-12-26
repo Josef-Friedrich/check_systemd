@@ -1,8 +1,7 @@
 import unittest
 
 from check_systemd import TableParser
-
-from .helper import convert_to_bytes
+from tests.helper import convert_to_bytes
 
 
 def read_stdout(file_name: str) -> str:

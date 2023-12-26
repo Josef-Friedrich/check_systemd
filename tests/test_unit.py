@@ -7,8 +7,7 @@ from nagiosplugin import CheckError
 
 import check_systemd
 from check_systemd import SystemdUnitTypesList, execute_cli
-
-from .helper import MPopen
+from tests.helper import MPopen
 
 
 class TestUnit(unittest.TestCase):
