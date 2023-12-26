@@ -12,9 +12,13 @@
     "**/MANIFEST": true,
     "**/nosetests.xml": true
   },
-  "python.formatting.provider": "black",
   "[python]": {
-    "editor.rulers": [79, 80, 88]
+    "editor.rulers": [
+      79,
+      80,
+      88
+    ],
+    "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "python.analysis.diagnosticSeverityOverrides": {
     "reportPrivateImportUsage": "none",
