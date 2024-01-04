@@ -22,4 +22,7 @@ docs:
 readme:
 	poetry run tox -e readme
 
-.PHONY: build upload test readme docs
+pin_docs_requirements:
+	pip-compile --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
+
+.PHONY: test update build publish docs readme pin_docs_requirements
