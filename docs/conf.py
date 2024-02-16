@@ -1,7 +1,6 @@
 import sphinx_rtd_theme
-
-# GLib.PGError: Could not connect: No such file or directory
-# import check_systemd
+from importlib.metadata import version as get_version
+from datetime import datetime
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
@@ -9,8 +8,6 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
-    "sphinx.ext.napoleon",
-    "sphinx_autodoc_typehints",
 ]
 templates_path = ["_templates"]
 source_suffix = ".rst"
@@ -18,16 +15,13 @@ source_suffix = ".rst"
 master_doc = "index"
 
 project = "check_systemd"
-copyright = "2024, Josef Friedrich"
+copyright: str = f"2019-{datetime.now().year}, Josef Friedrich"
 author = "Josef Friedrich"
-# version = check_systemd.__version__
-# release = check_systemd.__version__
-version = "3.1.0"
-release = "3.1.0"
+version: str = get_version("check_systemd")
+release: str = get_version("check_systemd")
 language = "en"
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build"]
 pygments_style = "sphinx"
-todo_include_todos = False
 html_static_path = []
 htmlhelp_basename = "checksystemddoc"
 autodoc_default_flags = [
@@ -36,4 +30,3 @@ autodoc_default_flags = [
     "private-members",
     "show-inheritance",
 ]
-napoleon_use_param = True
