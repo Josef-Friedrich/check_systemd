@@ -1,6 +1,7 @@
-import sphinx_rtd_theme
-from importlib.metadata import version as get_version
 from datetime import datetime
+from importlib.metadata import version as get_version
+
+import sphinx_rtd_theme
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
