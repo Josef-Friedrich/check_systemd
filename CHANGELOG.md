@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove performance data `data_source`
+- Remove performance data `data_source` (#32)
 
 ## [3.1.0] - 2024-01-04
 
