@@ -1140,7 +1140,7 @@ def get_argparser():
         ),  # noqa: E501
         description="Copyright (c) 2014-18 Andrea Briganti "
         "<kbytesys@gmail.com>\n"  # noqa: E251
-        "Copyright (c) 2019-23 Josef Friedrich <josef@friedrich.rocks>\n"
+        "Copyright (c) 2019-24 Josef Friedrich <josef@friedrich.rocks>\n"
         "\n"
         "Nagios / Icinga monitoring plugin to check systemd.\n",  # noqa: E501
         epilog="Performance data:\n"  # noqa: E251

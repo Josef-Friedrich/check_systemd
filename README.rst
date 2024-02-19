@@ -68,7 +68,7 @@ Command line interface
                          [--dbus | --cli] [--user] [-P | -p]
 
     Copyright (c) 2014-18 Andrea Briganti <kbytesys@gmail.com>
-    Copyright (c) 2019-23 Josef Friedrich <josef@friedrich.rocks>
+    Copyright (c) 2019-24 Josef Friedrich <josef@friedrich.rocks>
 
     Nagios / Icinga monitoring plugin to check systemd.
 
