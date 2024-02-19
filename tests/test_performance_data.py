@@ -9,7 +9,7 @@ class TestPerformanceData(unittest.TestCase):
         result.assert_ok()
         result.assert_first_line(
             "SYSTEMD OK - all "
-            "| count_units=386 data_source=cli startup_time=12.345;60;120 "
+            "| count_units=386 startup_time=12.345;60;120 "
             "units_activating=0 "
             "units_active=275 units_failed=0 units_inactive=111"
         )
@@ -26,7 +26,7 @@ class TestPerformanceData(unittest.TestCase):
         result.assert_critical()
         result.assert_first_line(
             "SYSTEMD CRITICAL - phpsessionclean.timer "
-            "| count_units=3 data_source=cli startup_time=12.345;60;120 "
+            "| count_units=3 startup_time=12.345;60;120 "
             "units_activating=0 "
             "units_active=3 units_failed=0 units_inactive=0"
         )
@@ -42,7 +42,6 @@ class TestPerformanceData(unittest.TestCase):
         result.assert_critical()
         result.assert_first_line(
             "SYSTEMD CRITICAL - smartd.service: failed | count_units=3 "
-            "data_source=cli "
             "startup_time=12.345;60;120 "
             "units_activating=0 units_active=1 units_failed=1 "
             "units_inactive=1"

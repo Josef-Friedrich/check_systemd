@@ -1038,13 +1038,6 @@ class PerformanceDataResource(Resource):
         )
 
 
-class PerformanceDataDataSourceResource(Resource):
-    def probe(self) -> typing.Generator[Metric, None, None]:
-        yield Metric(
-            name="data_source", value=opts.data_source, context="performance_data"
-        )
-
-
 class PerformanceDataContext(Context):
     def __init__(self):
         super(PerformanceDataContext, self).__init__("performance_data")
@@ -1464,7 +1457,6 @@ def main():
     if opts.performance_data:
         tasks += [
             PerformanceDataResource(),
-            PerformanceDataDataSourceResource(),
             PerformanceDataContext(),
         ]
 
