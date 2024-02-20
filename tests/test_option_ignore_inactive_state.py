@@ -1,9 +1,7 @@
-import unittest
-
 from tests.helper import execute_main
 
 
-class TestOptionIgnoreInactiveState(unittest.TestCase):
+class TestOptionIgnoreInactiveState:
     def test_with(self) -> None:
         result = execute_main(
             argv=["--unit", "ansible-pull.service"],
@@ -27,7 +25,3 @@ class TestOptionIgnoreInactiveState(unittest.TestCase):
             "count_units=2 startup_time=12.345;60;120 "
             "units_activating=0 units_active=1 units_failed=0 units_inactive=1"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

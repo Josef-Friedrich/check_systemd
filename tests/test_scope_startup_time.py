@@ -1,9 +1,7 @@
-import unittest
-
 from tests.helper import execute_main
 
 
-class TestScopeStartupTime(unittest.TestCase):
+class TestScopeStartupTime:
     def test_option_critical(self) -> None:
         result = execute_main(argv=["-c", "1", "--no-performance-data"])
         result.assert_critical()

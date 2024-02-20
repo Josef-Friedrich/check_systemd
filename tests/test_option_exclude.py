@@ -1,5 +1,3 @@
-import unittest
-
 from tests.helper import execute_main
 
 
@@ -13,7 +11,7 @@ def execute_with_opt_e(argv, unit_suffix="failed"):
     )
 
 
-class TestOptionExclude(unittest.TestCase):
+class TestOptionExclude:
     def test_known_service(self) -> None:
         result = execute_with_opt_e(
             argv=["-e", "smartd.service", "--no-performance-data"],
@@ -55,7 +53,3 @@ class TestOptionExclude(unittest.TestCase):
             "SYSTEMD UNKNOWN: check_systemd.CheckSystemdRegexpError: "
             "Invalid regular expression: '*service'"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

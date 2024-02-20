@@ -1,9 +1,7 @@
-import unittest
-
 from tests.helper import MPopen, execute_main
 
 
-class TestBootupNotFinished(unittest.TestCase):
+class TestBootupNotFinished:
     def test_bootup_not_finished(self) -> None:
         result = execute_main(
             argv=["--no-performance-data"],
@@ -26,8 +24,4 @@ class TestBootupNotFinished(unittest.TestCase):
         )
 
         result.assert_ok()
-        self.assertIn("SYSTEMD OK - all\n", result.output)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert "SYSTEMD OK - all\n" in result.output

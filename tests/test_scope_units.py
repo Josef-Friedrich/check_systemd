@@ -1,5 +1,3 @@
-import unittest
-
 from tests.helper import execute_main
 
 
@@ -13,7 +11,7 @@ def execute(argv, units_suffix="ok"):
     )
 
 
-class TestOk(unittest.TestCase):
+class TestOk:
     def test_ok(self) -> None:
         result = execute(argv=["--no-performance-data"])
         result.assert_ok()
@@ -25,23 +23,19 @@ class TestOk(unittest.TestCase):
         result.assert_first_line("SYSTEMD OK - all")
 
 
-class TestFailure(unittest.TestCase):
+class TestFailure:
     def test_failure(self) -> None:
         result = execute(argv=["--no-performance-data"], units_suffix="failed")
         result.assert_critical()
         result.assert_first_line("SYSTEMD CRITICAL - smartd.service: failed")
 
 
-class TestMultipleFailure(unittest.TestCase):
+class TestMultipleFailure:
     def test_failure_multiple(self) -> None:
         result = execute(
             argv=["--no-performance-data"], units_suffix="multiple-failure"
         )
         result.assert_critical()
         if result.first_line:
-            self.assertIn("rtkit-daemon.service: failed", result.first_line)
-            self.assertIn("smartd.service: failed", result.first_line)
-
-
-if __name__ == "__main__":
-    unittest.main()
+            assert "rtkit-daemon.service: failed" in result.first_line
+            assert "smartd.service: failed" in result.first_line

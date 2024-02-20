@@ -27,10 +27,11 @@ python = "^3.8"
 nagiosplugin = "^1.2"
 
 [tool.poetry.group.dev.dependencies]
-readme-patcher = "^0"
-tox = "^4"
-ruff = "^0"
 nagiosplugin-stubs = "^0"
+pytest = "^8"
+readme-patcher = "^0"
+ruff = "^0"
+tox = "^4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

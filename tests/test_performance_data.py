@@ -1,9 +1,7 @@
-import unittest
-
 from tests.helper import execute_main
 
 
-class TestPerformanceData(unittest.TestCase):
+class TestPerformanceData:
     def test_ok(self) -> None:
         result = execute_main(argv=["--performance-data"])
         result.assert_ok()
@@ -46,7 +44,3 @@ class TestPerformanceData(unittest.TestCase):
             "units_activating=0 units_active=1 units_failed=1 "
             "units_inactive=1"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

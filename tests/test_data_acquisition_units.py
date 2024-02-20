@@ -1,6 +1,5 @@
 """Tests related to data acquisition of systemd units."""
 
-import unittest
 
 from check_systemd import Unit, UnitCache, UnitNameFilter
 
@@ -33,7 +32,7 @@ unit_php = Unit(
 )
 
 
-class TestClassUnit(unittest.TestCase):
+class TestClassUnit:
     def test_initialization(self) -> None:
         unit = Unit(
             name="test.service",
@@ -41,15 +40,15 @@ class TestClassUnit(unittest.TestCase):
             sub_state="sub",
             load_state="load",
         )
-        self.assertEqual("test.service", unit.name)
-        self.assertEqual("active", unit.active_state)
-        self.assertEqual("sub", unit.sub_state)
-        self.assertEqual("load", unit.load_state)
-        self.assertEqual("active", unit.active_state)
+        assert "test.service" == unit.name
+        assert "active" == unit.active_state
+        assert "sub" == unit.sub_state
+        assert "load" == unit.load_state
+        assert "active" == unit.active_state
 
 
-class TestClassUnitCache(unittest.TestCase):
-    def setUp(self) -> None:
+class TestClassUnitCache:
+    def setup_method(self) -> None:
         self.unit_cache = UnitCache()
         self.unit_cache.add_unit(unit_modem_manager)
         self.unit_cache.add_unit(unit_mongod)
@@ -68,59 +67,59 @@ class TestClassUnitCache(unittest.TestCase):
         return units
 
     def test_method_add_with_kwargs(self) -> None:
-        self.assertEqual(8, self.unit_cache.count)
+        assert 8 == self.unit_cache.count
         unit = self.unit_cache.add_unit(
             name="test.service",
             active_state="active",
             sub_state="sub",
             load_state="load",
         )
-        self.assertEqual(unit.name, "test.service")
-        self.assertEqual(9, self.unit_cache.count)
+        assert unit.name == "test.service"
+        assert 9 == self.unit_cache.count
 
     def test_method_get(self) -> None:
         unit = self.unit_cache.get(name="ModemManager.service")
-        self.assertEqual("ModemManager.service", unit.name)
+        assert "ModemManager.service" == unit.name
 
     def test_method_list(self) -> None:
         units = self.list()
-        self.assertEqual(8, len(units))
+        assert 8 == len(units)
 
     def test_method_list_include(self) -> None:
         units = self.list(include="XXX")
-        self.assertEqual(0, len(units))
+        assert 0 == len(units)
 
         units = self.list(include="named.service")
-        self.assertEqual(1, len(units))
+        assert 1 == len(units)
 
         units = self.list(include="n.*")
-        self.assertEqual(4, len(units))
+        assert 4 == len(units)
 
     def test_method_list_include_multiple(self) -> None:
         units = self.list(include=("n.*", "p.*"))
-        self.assertEqual(5, len(units))
+        assert 5 == len(units)
 
     def test_method_list_exclude(self) -> None:
         units = self.list(exclude="named.service")
-        self.assertEqual(7, len(units))
+        assert 7 == len(units)
 
         units = self.list(exclude=r".*\.(mount|timer)")
-        self.assertEqual(6, len(units))
+        assert 6 == len(units)
 
     def test_method_list_exclude_multiple(self) -> None:
         units = self.list(exclude=("named.service", "nmbd.timer"))
-        self.assertEqual(6, len(units))
+        assert 6 == len(units)
 
     def test_method_count_by_states(self) -> None:
         counter = self.unit_cache.count_by_states(
             ("active_state:active", "active_state:failed")
         )
-        self.assertEqual(counter["active_state:active"], 7)
-        self.assertEqual(counter["active_state:failed"], 1)
+        assert counter["active_state:active"] == 7
+        assert counter["active_state:failed"] == 1
 
 
-class TestClassUnitNameFilter(unittest.TestCase):
-    def setUp(self) -> None:
+class TestClassUnitNameFilter:
+    def setup_method(self) -> None:
         self.filter = UnitNameFilter()
         self.filter.add("ModemManager.service")
         self.filter.add("mongod.service")
@@ -139,41 +138,37 @@ class TestClassUnitNameFilter(unittest.TestCase):
 
     def test_initialization_with_arg(self) -> None:
         filter = UnitNameFilter(["test1.service", "test2.service"])
-        self.assertEqual(2, len(filter.get()))
+        assert 2 == len(filter.get())
 
     def test_method_list(self) -> None:
         units = self.list()
-        self.assertEqual(8, len(units))
+        assert 8 == len(units)
 
     def test_method_list_include(self) -> None:
         units = self.list(include="XXX")
-        self.assertEqual(0, len(units))
+        assert 0 == len(units)
 
         units = self.list(include="named.service")
-        self.assertEqual(1, len(units))
+        assert 1 == len(units)
 
         units = self.list(include="n.*")
-        self.assertEqual(4, len(units))
+        assert 4 == len(units)
 
     def test_method_list_include_multiple(self) -> None:
         units = self.list(include=("n.*", "p.*"))
-        self.assertEqual(5, len(units))
+        assert 5 == len(units)
 
     def test_method_list_exclude(self) -> None:
         units = self.list(exclude="named.service")
-        self.assertEqual(7, len(units))
+        assert 7 == len(units)
 
         units = self.list(exclude=r".*\.(mount|timer)")
-        self.assertEqual(6, len(units))
+        assert 6 == len(units)
 
     def test_method_list_exclude_multiple(self) -> None:
         units = self.list(exclude=("named.service", "nmbd.timer"))
-        self.assertEqual(6, len(units))
+        assert 6 == len(units)
 
     def test_method_list_include_exclude_empty_list(self) -> None:
         units = self.list(include=[], exclude=[])
-        self.assertEqual(8, len(units))
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert 8 == len(units)

@@ -1,5 +1,3 @@
-import unittest
-
 from tests.helper import execute_main
 
 
@@ -25,11 +23,11 @@ def execute_with_opt_t(
     )
 
 
-class TestScopeTimers(unittest.TestCase):
+class TestScopeTimers:
     def test_dead_timers_1(self) -> None:
         result = execute_with_opt_t()
         result.assert_critical()
-        self.assertEqual("SYSTEMD CRITICAL - phpsessionclean.timer", result.first_line)
+        assert "SYSTEMD CRITICAL - phpsessionclean.timer" == result.first_line
 
     def test_dead_timers_2(self) -> None:
         result = execute_with_opt_t(stdout_timers_suffix="2")
@@ -84,7 +82,3 @@ class TestScopeTimers(unittest.TestCase):
         """n/a -> not available"""
         result = execute_with_opt_t(stdout_timers_suffix="all-n-a")
         result.assert_critical()
-
-
-if __name__ == "__main__":
-    unittest.main()

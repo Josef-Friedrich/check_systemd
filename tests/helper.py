@@ -142,7 +142,7 @@ class MockResult:
         return int(self.__sys_exit.call_args[0][0])
 
     def assert_exitcode(self, exitcode: int) -> None:
-        test.assertEqual(self.exitcode, exitcode)
+        assert self.exitcode == exitcode
 
     def assert_ok(self) -> None:
         self.assert_exitcode(0)
@@ -165,7 +165,7 @@ class MockResult:
             return self.output.split("\n", 1)[0]
 
     def assert_first_line(self, first_line: str) -> None:
-        test.assertEqual(self.first_line, first_line)
+        assert self.first_line == first_line
 
 
 def execute_main(

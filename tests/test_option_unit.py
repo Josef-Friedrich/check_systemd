@@ -1,5 +1,3 @@
-import unittest
-
 from tests.helper import execute_main
 
 
@@ -15,7 +13,7 @@ def execute_with_opt_u(argv, list_units="ok"):
     )
 
 
-class TestOptionUnit(unittest.TestCase):
+class TestOptionUnit:
     def test_ok(self) -> None:
         result = execute_with_opt_u(argv=["--unit", "nginx.service"], list_units="ok")
         result.assert_ok()
@@ -35,7 +33,3 @@ class TestOptionUnit(unittest.TestCase):
             "SYSTEMD UNKNOWN: ValueError: Please verify your --include-* and "
             "--exclude-* options. No units have been added for testing."
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
