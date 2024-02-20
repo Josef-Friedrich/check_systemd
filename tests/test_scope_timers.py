@@ -1,9 +1,16 @@
-from tests.helper import execute_main
+from __future__ import annotations
+
+from typing import Optional
+
+from tests.helper import MockResult, execute_main
 
 
 def execute_with_opt_t(
-    additional_argv=None, stdout_timers_suffix="1", warning=None, critical=None
-):
+    additional_argv: Optional[list[str]] = None,
+    stdout_timers_suffix: str = "1",
+    warning: Optional[int] = None,
+    critical: Optional[int] = None,
+) -> MockResult:
     argv = ["--timers", "--no-performance-data"]
     if warning:
         argv += ["--timers-warning", str(warning)]

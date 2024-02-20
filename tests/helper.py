@@ -112,6 +112,7 @@ class MockResult:
         output."""
         if self.__stdout:
             return self.__stdout
+        return None
 
     @property
     def stderr(self) -> str | None:
@@ -119,6 +120,7 @@ class MockResult:
         output."""
         if self.__stderr:
             return self.__stderr
+        return None
 
     @property
     def output(self) -> str:
@@ -163,6 +165,7 @@ class MockResult:
         """
         if self.output:
             return self.output.split("\n", 1)[0]
+        return None
 
     def assert_first_line(self, first_line: str) -> None:
         assert self.first_line == first_line
@@ -174,7 +177,7 @@ def execute_main(
         "systemctl-list-units_ok.txt",
         "systemd-analyze_12.345.txt",
     ],
-    popen: typing.Iterable[MPopen] | None = None,
+    popen: typing.Iterable[Mock] | None = None,
 ) -> MockResult:
     """Execute the main function with a lot of patched functions and classes.
 

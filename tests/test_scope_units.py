@@ -1,7 +1,9 @@
-from tests.helper import execute_main
+from __future__ import annotations
+
+from tests.helper import MockResult, execute_main
 
 
-def execute(argv, units_suffix="ok"):
+def execute(argv: list[str], units_suffix: str = "ok") -> MockResult:
     return execute_main(
         argv=argv,
         stdout=[

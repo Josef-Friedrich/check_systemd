@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from check_systemd import TableParser
 from tests.helper import convert_to_bytes
 
@@ -6,7 +10,7 @@ def read_stdout(file_name: str) -> str:
     return convert_to_bytes(file_name).decode("utf-8")
 
 
-def get_parser():
+def get_parser() -> TableParser:
     return TableParser(read_stdout("systemctl-list-units_v246.txt"))
 
 
@@ -20,13 +24,13 @@ class TestTableParser:
         assert ["", "unit", "load", "active", "sub", "description"] == parser.columns
 
     def test_detect_column_lengths(self) -> None:
-        detect = TableParser._TableParser__detect_lengths
+        detect = TableParser._TableParser__detect_lengths  # type: ignore
         assert [3, 3] == detect("1  2  3")
         assert [2, 3, 3] == detect("  1  2  3  ")
         assert [2, 2, 3, 2, 3, 2] == detect("  1 1  2 2  3 3  ")
 
     def test_split_line_into_columns(self) -> None:
-        split = TableParser._TableParser__split_row
+        split = TableParser._TableParser__split_row  # type: ignore
         assert ["123", "456", "789"] == split("123456789", [3, 3])
         assert ["UNIT", "STATE", "LOAD"] == split("UNIT  STATE  LOAD  ", [6, 7])
 
@@ -42,14 +46,19 @@ class TestTableParser:
 
     def test_get_row_all(self) -> None:
         parser = get_parser()
+        row: Optional[dict[str, str]] = None
         for i in range(0, parser.row_count):
             row = parser.get_row(i)
+        assert row is not None
         assert "systemd-tmpfiles-clean.timer" == row["unit"]
 
     def test_list_rows(self) -> None:
         parser = get_parser()
+        row: Optional[dict[str, str]] = None
         for row in parser.list_rows():
             pass
+
+        assert row is not None
         assert "systemd-tmpfiles-clean.timer" == row["unit"]
 
     def test_narrow_column_separators(self) -> None:
