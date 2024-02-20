@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v4
       # https://github.com/marketplace/actions/setup-python
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.x"
 
@@ -26,7 +26,10 @@ jobs:
 
     # https://github.com/marketplace/actions/publish-python-poetry-package
     - name: Publish to PyPI
-      uses: JRubics/poetry-publish@v1.17
+      # https://github.com/JRubics/poetry-publish/issues/39
+      uses: JRubics/poetry-publish@v2.0
       with:
+        # https://pypi.org/manage/account/token/
+        # https://github.com/<owner>/<repo>/settings/secrets/actions/new
         pypi_token: ${{ secrets.PYPI_API_TOKEN }}
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
