@@ -2,6 +2,8 @@
 
 {{ badge.github_workflow() }}
 
+{{ badge.readthedocs }}
+
 check_systemd
 =============
 

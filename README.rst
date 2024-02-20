@@ -6,6 +6,10 @@
     :target: https://github.com/Josef-Friedrich/check_systemd/actions/workflows/tests.yml
     :alt: Tests
 
+.. image:: https://readthedocs.org/projects/check-systemd/badge/?version=latest
+    :target: https://check-systemd.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 check_systemd
 =============
 
