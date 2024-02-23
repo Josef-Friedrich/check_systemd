@@ -415,6 +415,61 @@ def match_multiple(unit_name: str, regexes: str | typing.Sequence[str]) -> bool:
     return False
 
 
+ActiveState = typing.Literal[
+    "active", "reloading", "inactive", "failed", "activating", "deactivating"
+]
+
+
+SubState = typing.Literal[
+    "abandoned",
+    "activating-done",
+    "activating",
+    "active",
+    "auto-restart",
+    "cleaning",
+    "condition",
+    "deactivating-sigkill",
+    "deactivating-sigterm",
+    "deactivating",
+    "dead",
+    "elapsed",
+    "exited",
+    "failed",
+    "final-sigkill",
+    "final-sigterm",
+    "final-watchdog",
+    "listening",
+    "mounted",
+    "mounting-done",
+    "mounting",
+    "plugged",
+    "reload",
+    "remounting-sigkill",
+    "remounting-sigterm",
+    "remounting",
+    "running",
+    "start-chown",
+    "start-post",
+    "start-pre",
+    "start",
+    "stop-post",
+    "stop-pre-sigkill",
+    "stop-pre-sigterm",
+    "stop-pre",
+    "stop-sigkill",
+    "stop-sigterm",
+    "stop-watchdog",
+    "stop",
+    "tentative",
+    "unmounting-sigkill",
+    "unmounting-sigterm",
+    "unmounting",
+    "waiting",
+]
+
+LoadState = typing.Literal["loaded", "error", "masked"]
+
+
 class Unit:
     """This class bundles all state related informations of a systemd unit in a
     object. This class is inherited by the class ``DbusUnit`` and the
@@ -427,9 +482,7 @@ class Unit:
     column containing unit names titled with “UNIT”.
     """
 
-    active_state: typing.Literal[
-        "active", "reloading", "inactive", "failed", "activating", "deactivating"
-    ]
+    active_state: ActiveState
     """From the `D-Bus interface of systemd documentation
     <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
 
@@ -463,52 +516,7 @@ class Unit:
     process of deactivation.
     """
 
-    sub_state: typing.Literal[
-        "abandoned",
-        "activating-done",
-        "activating",
-        "active",
-        "auto-restart",
-        "cleaning",
-        "condition",
-        "deactivating-sigkill",
-        "deactivating-sigterm",
-        "deactivating",
-        "dead",
-        "elapsed",
-        "exited",
-        "failed",
-        "final-sigkill",
-        "final-sigterm",
-        "final-watchdog",
-        "listening",
-        "mounted",
-        "mounting-done",
-        "mounting",
-        "plugged",
-        "reload",
-        "remounting-sigkill",
-        "remounting-sigterm",
-        "remounting",
-        "running",
-        "start-chown",
-        "start-post",
-        "start-pre",
-        "start",
-        "stop-post",
-        "stop-pre-sigkill",
-        "stop-pre-sigterm",
-        "stop-pre",
-        "stop-sigkill",
-        "stop-sigterm",
-        "stop-watchdog",
-        "stop",
-        "tentative",
-        "unmounting-sigkill",
-        "unmounting-sigterm",
-        "unmounting",
-        "waiting",
-    ]
+    sub_state: SubState
 
     """From the `D-Bus interface of systemd documentation
     <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
@@ -552,7 +560,7 @@ class Unit:
     * timer: ``dead``, ``waiting``, ``running``, ``elapsed``, ``failed``
     """
 
-    load_state: typing.Literal["loaded", "error", "masked"]
+    load_state: LoadState
     """From the `D-Bus interface of systemd documentation
     <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
 
@@ -616,27 +624,27 @@ class SystemdUnitTypesList(collections.abc.MutableSequence):
         )
         self.extend(list(args))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.unit_types)
 
     def __getitem__(self, index):
         return self.unit_types[index]
 
-    def __delitem__(self, index):
+    def __delitem__(self, index) -> None:
         del self.unit_types[index]
 
-    def __setitem__(self, index, unit_type):
+    def __setitem__(self, index, unit_type) -> None:
         self.__check_type(unit_type)
         self.unit_types[index] = unit_type
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.unit_types)
 
-    def insert(self, index, unit_type):
+    def insert(self, index, unit_type) -> None:
         self.__check_type(unit_type)
         self.unit_types.insert(index, unit_type)
 
-    def __check_type(self, type):
+    def __check_type(self, type) -> None:
         if type not in self.__all_types:
             raise ValueError(
                 "The given type '{}' is not a valid systemd " "unit type.".format(type)
@@ -651,10 +659,10 @@ class UnitNameFilter:
     ``fstrim.timer``) and provides a interface to filter the names by regular
     expressions."""
 
-    def __init__(self, unit_names=()):
+    def __init__(self, unit_names=()) -> None:
         self.__unit_names = set(unit_names)
 
-    def add(self, unit_name: str):
+    def add(self, unit_name: str) -> None:
         """Add one unit name.
 
         :param unit_name: The name of the unit, for example ``apt.timer``.
@@ -698,21 +706,21 @@ class UnitNameFilter:
 class UnitCache:
     """This class is a container class for systemd units."""
 
-    def __init__(self):
-        self.__units = {}
+    def __init__(self) -> None:
+        self.__units: dict[str, Unit] = {}
         self.__name_filter = UnitNameFilter()
 
-    def __add_unit(self, unit: Unit):
+    def __add_unit(self, unit: Unit) -> None:
         self.__units[unit.name] = unit
         self.__name_filter.add(unit.name)
 
     def add_unit(
         self,
-        unit: Unit = None,
-        name: str = None,
-        active_state: str = None,
-        sub_state: str = None,
-        load_state: str = None,
+        unit: typing.Optional[Unit] = None,
+        name: typing.Optional[str] = None,
+        active_state: typing.Optional[str] = None,
+        sub_state: typing.Optional[str] = None,
+        load_state: typing.Optional[str] = None,
     ) -> Unit:
         if not unit:
             unit = Unit()
@@ -754,7 +762,7 @@ class UnitCache:
             yield self.__units[name]
 
     @property
-    def count(self):
+    def count(self) -> int:
         return len(self.__units)
 
     def count_by_states(
@@ -806,7 +814,7 @@ class CliUnitCache(UnitCache):
 
 
 class DbusUnitCache(UnitCache):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         all_units = dbus_manager.manager.ListUnits()
         for name, _, load_state, active_state, sub_state, _, _, _, _, _ in all_units:
@@ -890,7 +898,7 @@ class TimersResource(Resource):
       checks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     name = "SYSTEMD"
@@ -935,7 +943,7 @@ class TimersResource(Resource):
 
 
 class TimersContext(Context):
-    def __init__(self):
+    def __init__(self) -> None:
         super(TimersContext, self).__init__("timers")
 
     def evaluate(self, metric: Metric, resource: Resource):
@@ -993,7 +1001,7 @@ class StartupTimeResource(Resource):
 
 
 class StartupTimeContext(ScalarContext):
-    def __init__(self):
+    def __init__(self) -> None:
         super(StartupTimeContext, self).__init__("startup_time")
         if opts.scope_startup_time:
             self.warning = Range(opts.warning)
@@ -1039,7 +1047,7 @@ class PerformanceDataResource(Resource):
 
 
 class PerformanceDataContext(Context):
-    def __init__(self):
+    def __init__(self) -> None:
         super(PerformanceDataContext, self).__init__("performance_data")
 
     def performance(self, metric: Metric, resource: Resource):
@@ -1132,7 +1140,7 @@ def convert_to_regexp_list(regexp=None, unit_names=None, unit_types=None):
     return result
 
 
-def get_argparser():
+def get_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check_systemd",  # To get the right command name in the README.
         formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(
