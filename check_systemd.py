@@ -59,7 +59,7 @@ import argparse
 import collections.abc
 import re
 import subprocess
-import typing
+from typing import Generator, Literal, Optional, Sequence
 
 try:
     import nagiosplugin
@@ -113,7 +113,7 @@ class OptionContainer:
     critical: str
     performance_data: bool
     include_unit: str
-    data_source: typing.Literal["dbus", "cli"]
+    data_source: Literal["dbus", "cli"]
     include_type: list[str]
     exclude_type: list[str]
     exclude_unit: list[str]
@@ -215,7 +215,7 @@ def format_timespan_to_seconds(fmt_timespan: str) -> float:
     return round(float(result), 3)
 
 
-def execute_cli(args: str | typing.Sequence[str]) -> str | None:
+def execute_cli(args: str | Sequence[str]) -> str | None:
     """Execute a command on the command line (cli = command line interface))
     and capture the stdout. This is a wrapper around ``subprocess.Popen``.
 
@@ -245,6 +245,7 @@ def execute_cli(args: str | typing.Sequence[str]) -> str | None:
     if stdout:
         stdout = stdout.decode("utf-8")
         return stdout
+    return None
 
 
 class TableParser:
@@ -330,7 +331,7 @@ class TableParser:
         is not taken into account."""
         return len(self.body_rows)
 
-    def check_header(self, column_header: typing.Sequence[str]) -> None:
+    def check_header(self, column_header: Sequence[str]) -> None:
         """Check if the specified column names are present in the header row of
         the text table. Raise an exception if not.
 
@@ -369,7 +370,7 @@ class TableParser:
             index += 1
         return result
 
-    def list_rows(self) -> typing.Generator[dict[str, str], None, None]:
+    def list_rows(self) -> Generator[dict[str, str], None, None]:
         """List all rows."""
         for i in range(0, self.row_count):
             yield self.get_row(i)
@@ -392,7 +393,7 @@ class CheckSystemdRegexpError(CheckSystemdError):
     pass
 
 
-def match_multiple(unit_name: str, regexes: str | typing.Sequence[str]) -> bool:
+def match_multiple(unit_name: str, regexes: str | Sequence[str]) -> bool:
     """
     Match multiple regular expressions against a unit name.
 
@@ -415,12 +416,12 @@ def match_multiple(unit_name: str, regexes: str | typing.Sequence[str]) -> bool:
     return False
 
 
-ActiveState = typing.Literal[
+ActiveState = Literal[
     "active", "reloading", "inactive", "failed", "activating", "deactivating"
 ]
 
 
-SubState = typing.Literal[
+SubState = Literal[
     "abandoned",
     "activating-done",
     "activating",
@@ -467,7 +468,7 @@ SubState = typing.Literal[
     "waiting",
 ]
 
-LoadState = typing.Literal["loaded", "error", "masked"]
+LoadState = Literal["loaded", "error", "masked"]
 
 
 class Unit:
@@ -659,6 +660,8 @@ class UnitNameFilter:
     ``fstrim.timer``) and provides a interface to filter the names by regular
     expressions."""
 
+    __unit_names: set[str]
+
     def __init__(self, unit_names=()) -> None:
         self.__unit_names = set(unit_names)
 
@@ -669,15 +672,15 @@ class UnitNameFilter:
         """
         self.__unit_names.add(unit_name)
 
-    def get(self) -> typing.Set[str]:
+    def get(self) -> set[str]:
         """Get all stored unit names."""
         return self.__unit_names
 
     def list(
         self,
-        include: str | typing.Iterator[str] | None = None,
-        exclude: str | typing.Iterator[str] | None = None,
-    ) -> typing.Generator[str, None, None]:
+        include: str | Sequence[str] | None = None,
+        exclude: str | Sequence[str] | None = None,
+    ) -> Generator[str, None, None]:
         """
         List all unit names or apply filters (``include`` or ``exclude``) to
         the list of unit names.
@@ -716,11 +719,11 @@ class UnitCache:
 
     def add_unit(
         self,
-        unit: typing.Optional[Unit] = None,
-        name: typing.Optional[str] = None,
-        active_state: typing.Optional[str] = None,
-        sub_state: typing.Optional[str] = None,
-        load_state: typing.Optional[str] = None,
+        unit: Optional[Unit] = None,
+        name: Optional[str] = None,
+        active_state: Optional[str] = None,
+        sub_state: Optional[str] = None,
+        load_state: Optional[str] = None,
     ) -> Unit:
         if not unit:
             unit = Unit()
@@ -741,9 +744,9 @@ class UnitCache:
 
     def list(
         self,
-        include: str | typing.Iterator[str] | None = None,
-        exclude: str | typing.Iterator[str] | None = None,
-    ) -> typing.Generator[Unit, None, None]:
+        include: str | Sequence[str] | None = None,
+        exclude: str | Sequence[str] | None = None,
+    ) -> Generator[Unit, None, None]:
         """
         List all units or apply filters (``include`` or ``exclude``) to
         the list of unit.
@@ -767,9 +770,9 @@ class UnitCache:
 
     def count_by_states(
         self,
-        states: typing.Iterator[str],
-        include: str | typing.Iterator[str] | None = None,
-        exclude: str | typing.Iterator[str] | None = None,
+        states: Sequence[str],
+        include: str | Sequence[str] | None = None,
+        exclude: str | Sequence[str] | None = None,
     ) -> dict:
         states_normalized = []
         counter = {}
@@ -834,7 +837,7 @@ unit_cache: UnitCache = None
 
 
 class UnitsResource(Resource):
-    def probe(self) -> typing.Generator[Metric, None, None]:
+    def probe(self) -> Generator[Metric, None, None]:
         counter = 0
         for unit in unit_cache.list(include=opts.include, exclude=opts.exclude):
             yield Metric(name=unit.name, value=unit, context="units")
@@ -903,7 +906,7 @@ class TimersResource(Resource):
 
     name = "SYSTEMD"
 
-    def probe(self) -> typing.Generator[Metric, None, None]:
+    def probe(self) -> Generator[Metric, None, None]:
         """
         :return: generator that emits
           :class:`~nagiosplugin.metric.Metric` objects
@@ -965,7 +968,7 @@ class StartupTimeResource(Resource):
     """Resource that calls ``systemd-analyze`` on the command line to get
     informations about the startup time."""
 
-    def probe(self) -> typing.Generator[Metric, None, None]:
+    def probe(self) -> Generator[Metric, None, None]:
         """Query system state and return metrics.
 
         :return: generator that emits
@@ -1025,7 +1028,7 @@ class StartupTimeContext(ScalarContext):
 
 
 class PerformanceDataResource(Resource):
-    def probe(self) -> typing.Generator[Metric, None, None]:
+    def probe(self) -> Generator[Metric, None, None]:
         for state_spec, count in unit_cache.count_by_states(
             (
                 "active_state:failed",
@@ -1090,7 +1093,7 @@ class SystemdSummary(Summary):
 
         :returns: status line
         """
-        summary: typing.List[Result] = []
+        summary: list[Result] = []
         for result in results.most_significant:
             if result.context and result.context.name in [
                 "startup_time",
@@ -1100,14 +1103,14 @@ class SystemdSummary(Summary):
                 summary.append(result)
         return ", ".join(["{0}".format(result) for result in summary])
 
-    def verbose(self, results: Results) -> typing.List[str]:
+    def verbose(self, results: Results) -> list[str]:
         """Provides extra lines if verbose plugin execution is requested.
 
         :param results: :class:`~.result.Results` container
 
         :returns: list of strings
         """
-        summary: typing.List[str] = []
+        summary: list[str] = []
         for result in results.most_significant:
             if result.context and result.context.name in [
                 "startup_time",
@@ -1424,7 +1427,7 @@ def normalize_argparser(opts: argparse.Namespace) -> argparse.Namespace:
 
 
 @nagiosplugin.guarded(verbose=0)
-def main():
+def main() -> None:
     """The main entry point of the monitoring plugin. First the command line
     arguments are read into the variable ``opts``. The configuration of this
     ``opts`` object decides which instances of the `Resource
@@ -1448,7 +1451,7 @@ def main():
     else:
         unit_cache = CliUnitCache(with_user_units=opts.with_user_units)
 
-    tasks: typing.List[object] = [
+    tasks: list[object] = [
         UnitsResource(),
         UnitsContext(),
         SystemdSummary(),
