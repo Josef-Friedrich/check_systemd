@@ -113,12 +113,12 @@ class OptionContainer:
     critical: str
     performance_data: bool
     include_unit: str
-    data_source: Literal["dbus", "cli"]
+    data_source: Optional[Literal["dbus", "cli"]]
     include_type: list[str]
     exclude_type: list[str]
     exclude_unit: list[str]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.include = []
         self.exclude = []
         self.unit = None
@@ -662,7 +662,7 @@ class UnitNameFilter:
 
     __unit_names: set[str]
 
-    def __init__(self, unit_names=()) -> None:
+    def __init__(self, unit_names: Sequence[str] = ()) -> None:
         self.__unit_names = set(unit_names)
 
     def add(self, unit_name: str) -> None:
@@ -696,21 +696,26 @@ class UnitNameFilter:
           expressions (``exclude=('.*service', '.*mount')``).
         """
         for name in self.__unit_names:
+            output: Optional[str] = name
             if include and not match_multiple(name, include):
-                name = None
+                output = None
 
-            if name and exclude and match_multiple(name, exclude):
-                name = None
+            if output and exclude and match_multiple(name, exclude):
+                output = None
 
-            if name:
-                yield name
+            if output:
+                yield output
 
 
 class UnitCache:
     """This class is a container class for systemd units."""
 
+    __units: dict[str, Unit]
+
+    __name_filter: UnitNameFilter
+
     def __init__(self) -> None:
-        self.__units: dict[str, Unit] = {}
+        self.__units = {}
         self.__name_filter = UnitNameFilter()
 
     def __add_unit(self, unit: Unit) -> None:
@@ -721,9 +726,9 @@ class UnitCache:
         self,
         unit: Optional[Unit] = None,
         name: Optional[str] = None,
-        active_state: Optional[str] = None,
-        sub_state: Optional[str] = None,
-        load_state: Optional[str] = None,
+        active_state: Optional[ActiveState] = None,
+        sub_state: Optional[SubState] = None,
+        load_state: Optional[LoadState] = None,
     ) -> Unit:
         if not unit:
             unit = Unit()
@@ -738,9 +743,10 @@ class UnitCache:
         self.__add_unit(unit)
         return unit
 
-    def get(self, name=None):
+    def get(self, name: Optional[str]=None) -> Unit | None:
         if name:
             return self.__units[name]
+        return None
 
     def list(
         self,
