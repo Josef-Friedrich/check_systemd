@@ -59,7 +59,7 @@ import argparse
 import collections.abc
 import re
 import subprocess
-from typing import Any, Generator, Literal, Optional, Sequence, Union, cast, get_args
+from typing import Generator, Literal, Optional, Sequence, Union, cast, get_args
 
 try:
     import nagiosplugin
@@ -850,6 +850,20 @@ class CliUnitCache(UnitCache):
                     sub_state=_check_sub_state(row["sub"]),
                     load_state=_check_load_state(row["load"]),
                 )
+
+
+def _collect_properties(unit_name: str) -> dict[str, str]:
+    stdout = execute_cli(["systemctl", "show", unit_name])
+    if stdout is None:
+        raise CheckSystemdError(f"The unit '{unit_name}' couldn't be found.")
+    rows = stdout.splitlines()
+
+    properties: dict[str, str] = {}
+    for row in rows:
+        index_equal_sign = row.index("=")
+        properties[row[:index_equal_sign]] = row[index_equal_sign + 1 :]
+
+    return properties
 
 
 class DbusUnitCache(UnitCache):
