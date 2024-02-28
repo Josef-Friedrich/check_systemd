@@ -1476,7 +1476,7 @@ def main() -> None:
     else:
         unit_cache = CliUnitCache(with_user_units=opts.with_user_units)
 
-    tasks: list[object] = [
+    tasks: list[Union[Resource, Context, Summary]] = [
         UnitsResource(),
         UnitsContext(),
         SystemdSummary(),
