@@ -59,7 +59,7 @@ import argparse
 import collections.abc
 import re
 import subprocess
-from typing import Generator, Literal, Optional, Sequence, Union, cast
+from typing import Any, Generator, Literal, Optional, Sequence, Union, cast, get_args
 
 try:
     import nagiosplugin
@@ -431,6 +431,44 @@ def match_multiple(unit_name: str, regexes: str | Sequence[str]) -> bool:
 ActiveState = Literal[
     "active", "reloading", "inactive", "failed", "activating", "deactivating"
 ]
+"""From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``ActiveState`` contains a state value that reflects whether the unit
+is currently active or not. The following states are currently defined:
+
+* ``active``,
+* ``reloading``,
+* ``inactive``,
+* ``failed``,
+* ``activating``, and
+* ``deactivating``.
+
+``active`` indicates that unit is active (obviously...).
+
+``reloading`` indicates that the unit is active and currently reloading
+its configuration.
+
+``inactive`` indicates that it is inactive and the previous run was
+successful or no previous run has taken place yet.
+
+``failed`` indicates that it is inactive and the previous run was not
+successful (more information about the reason for this is available on
+the unit type specific interfaces, for example for services in the
+Result property, see below).
+
+``activating`` indicates that the unit has previously been inactive but
+is currently in the process of entering an active state.
+
+Conversely ``deactivating`` indicates that the unit is currently in the
+process of deactivation.
+"""
+
+
+def _check_active_state(state: object) -> ActiveState | None:
+    states: tuple[ActiveState] = get_args(ActiveState)
+    if state in states:
+        return state
 
 
 SubState = Literal[
@@ -479,8 +517,87 @@ SubState = Literal[
     "unmounting",
     "waiting",
 ]
+"""From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``SubState`` encodes states of the same state machine that
+``ActiveState`` covers, but knows more fine-grained states that are
+unit-type-specific. Where ``ActiveState`` only covers six high-level
+states, ``SubState`` covers possibly many more low-level
+unit-type-specific states that are mapped to the six high-level states.
+Note that multiple low-level states might map to the same high-level
+state, but not vice versa. Not all high-level states have low-level
+counterparts on all unit types.
+
+All sub states are listed in the file `basic/unit-def.c
+<https://github.com/systemd/systemd/blob/main/src/basic/unit-def.c>`_
+of the systemd source code:
+
+* automount: ``dead``, ``waiting``, ``running``, ``failed``
+* device: ``dead``, ``tentative``, ``plugged``
+* mount: ``dead``, ``mounting``, ``mounting-done``, ``mounted``,
+    ``remounting``, ``unmounting``, ``remounting-sigterm``,
+    ``remounting-sigkill``, ``unmounting-sigterm``,
+    ``unmounting-sigkill``, ``failed``, ``cleaning``
+* path: ``dead``, ``waiting``, ``running``, ``failed``
+* scope: ``dead``, ``running``, ``abandoned``, ``stop-sigterm``,
+    ``stop-sigkill``, ``failed``
+* service: ``dead``, ``condition``, ``start-pre``, ``start``,
+    ``start-post``, ``running``, ``exited``, ``reload``, ``stop``,
+    ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``,
+    ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``,
+    ``auto-restart``, ``cleaning``
+* slice: ``dead``, ``active``
+* socket: ``dead``, ``start-pre``, ``start-chown``, ``start-post``,
+    ``listening``, ``running``, ``stop-pre``, ``stop-pre-sigterm``,
+    ``stop-pre-sigkill``, ``stop-post``, ``final-sigterm``,
+    ``final-sigkill``, ``failed``, ``cleaning``
+* swap: ``dead``, ``activating``, ``activating-done``, ``active``,
+    ``deactivating``, ``deactivating-sigterm``, ``deactivating-sigkill``,
+    ``failed``, ``cleaning``
+* target:``dead``, ``active``
+* timer: ``dead``, ``waiting``, ``running``, ``elapsed``, ``failed``
+"""
+
+
+def _check_sub_state(state: object) -> SubState | None:
+    states: tuple[SubState] = get_args(SubState)
+    if state in states:
+        return state
+
 
 LoadState = Literal["loaded", "error", "masked"]
+"""From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``LoadState`` contains a state value that reflects whether the
+configuration file of this unit has been loaded. The following states
+are currently defined:
+
+* ``loaded``,
+* ``error`` and
+* ``masked``.
+
+``loaded`` indicates that the configuration was successfully loaded.
+
+``error`` indicates that the configuration failed to load, the
+``LoadError`` field contains information about the cause of this
+failure.
+
+``masked`` indicates that the unit is currently masked out (i.e.
+symlinked to /dev/null or suchlike).
+
+Note that the ``LoadState`` is fully orthogonal to the ``ActiveState``
+(see below) as units without valid loaded configuration might be active
+(because configuration might have been reloaded at a time where a unit
+was already active).
+"""
+
+
+def _check_load_state(state: object) -> LoadState | None:
+    states: tuple[LoadState] = get_args(LoadState)
+    if state in states:
+        return state
 
 
 class Unit:
@@ -496,111 +613,12 @@ class Unit:
     """
 
     active_state: ActiveState
-    """From the `D-Bus interface of systemd documentation
-    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
-
-    ``ActiveState`` contains a state value that reflects whether the unit
-    is currently active or not. The following states are currently defined:
-
-    * ``active``,
-    * ``reloading``,
-    * ``inactive``,
-    * ``failed``,
-    * ``activating``, and
-    * ``deactivating``.
-
-    ``active`` indicates that unit is active (obviously...).
-
-    ``reloading`` indicates that the unit is active and currently reloading
-    its configuration.
-
-    ``inactive`` indicates that it is inactive and the previous run was
-    successful or no previous run has taken place yet.
-
-    ``failed`` indicates that it is inactive and the previous run was not
-    successful (more information about the reason for this is available on
-    the unit type specific interfaces, for example for services in the
-    Result property, see below).
-
-    ``activating`` indicates that the unit has previously been inactive but
-    is currently in the process of entering an active state.
-
-    Conversely ``deactivating`` indicates that the unit is currently in the
-    process of deactivation.
-    """
 
     sub_state: SubState
 
-    """From the `D-Bus interface of systemd documentation
-    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
-
-    ``SubState`` encodes states of the same state machine that
-    ``ActiveState`` covers, but knows more fine-grained states that are
-    unit-type-specific. Where ``ActiveState`` only covers six high-level
-    states, ``SubState`` covers possibly many more low-level
-    unit-type-specific states that are mapped to the six high-level states.
-    Note that multiple low-level states might map to the same high-level
-    state, but not vice versa. Not all high-level states have low-level
-    counterparts on all unit types.
-
-    All sub states are listed in the file `basic/unit-def.c
-    <https://github.com/systemd/systemd/blob/main/src/basic/unit-def.c>`_
-    of the systemd source code:
-
-    * automount: ``dead``, ``waiting``, ``running``, ``failed``
-    * device: ``dead``, ``tentative``, ``plugged``
-    * mount: ``dead``, ``mounting``, ``mounting-done``, ``mounted``,
-        ``remounting``, ``unmounting``, ``remounting-sigterm``,
-        ``remounting-sigkill``, ``unmounting-sigterm``,
-        ``unmounting-sigkill``, ``failed``, ``cleaning``
-    * path: ``dead``, ``waiting``, ``running``, ``failed``
-    * scope: ``dead``, ``running``, ``abandoned``, ``stop-sigterm``,
-        ``stop-sigkill``, ``failed``
-    * service: ``dead``, ``condition``, ``start-pre``, ``start``,
-        ``start-post``, ``running``, ``exited``, ``reload``, ``stop``,
-        ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``,
-        ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``,
-        ``auto-restart``, ``cleaning``
-    * slice: ``dead``, ``active``
-    * socket: ``dead``, ``start-pre``, ``start-chown``, ``start-post``,
-        ``listening``, ``running``, ``stop-pre``, ``stop-pre-sigterm``,
-        ``stop-pre-sigkill``, ``stop-post``, ``final-sigterm``,
-        ``final-sigkill``, ``failed``, ``cleaning``
-    * swap: ``dead``, ``activating``, ``activating-done``, ``active``,
-        ``deactivating``, ``deactivating-sigterm``, ``deactivating-sigkill``,
-        ``failed``, ``cleaning``
-    * target:``dead``, ``active``
-    * timer: ``dead``, ``waiting``, ``running``, ``elapsed``, ``failed``
-    """
-
     load_state: LoadState
-    """From the `D-Bus interface of systemd documentation
-    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
 
-    ``LoadState`` contains a state value that reflects whether the
-    configuration file of this unit has been loaded. The following states
-    are currently defined:
-
-    * ``loaded``,
-    * ``error`` and
-    * ``masked``.
-
-    ``loaded`` indicates that the configuration was successfully loaded.
-
-    ``error`` indicates that the configuration failed to load, the
-    ``LoadError`` field contains information about the cause of this
-    failure.
-
-    ``masked`` indicates that the unit is currently masked out (i.e.
-    symlinked to /dev/null or suchlike).
-
-    Note that the ``LoadState`` is fully orthogonal to the ``ActiveState``
-    (see below) as units without valid loaded configuration might be active
-    (because configuration might have been reloaded at a time where a unit
-    was already active).
-    """
-
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.name = kwargs.get("name")
         self.active_state = kwargs.get("active_state")
         self.sub_state = kwargs.get("sub_state")
@@ -828,9 +846,9 @@ class CliUnitCache(UnitCache):
             for row in table_parser.list_rows():
                 self.add_unit(
                     name=row["unit"],
-                    active_state=row["active"],
-                    sub_state=row["sub"],
-                    load_state=row["load"],
+                    active_state=_check_active_state(row["active"]),
+                    sub_state=_check_sub_state(row["sub"]),
+                    load_state=_check_load_state(row["load"]),
                 )
 
 
