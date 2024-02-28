@@ -27,7 +27,7 @@ python = "^3.8"
 nagiosplugin = "^1.2"
 
 [tool.poetry.group.dev.dependencies]
-nagiosplugin-stubs = "^0"
+nagiosplugin-stubs = "0.5.0"
 pytest = "^8"
 readme-patcher = "^0"
 ruff = "^0"

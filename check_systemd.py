@@ -59,7 +59,7 @@ import argparse
 import collections.abc
 import re
 import subprocess
-from typing import Generator, Literal, Optional, Sequence
+from typing import Generator, Literal, Optional, Sequence, Union, cast
 
 try:
     import nagiosplugin
@@ -101,22 +101,34 @@ class OptionContainer:
     """This class has the same attributes as the ``Namespace`` instance
     returned by the ``argparse`` package."""
 
-    include: list[str] = []
-    exclude: list[str] = []
-    unit: str | None
-    required: str | None
-    timers_critical: int
-    timers_warning: int
+    verbose: int
+
+    # scope: units
     ignore_inactive_state: bool
-    scope_startup_time: bool
-    warning: str
-    critical: str
-    performance_data: bool
-    include_unit: str
-    data_source: Optional[Literal["dbus", "cli"]]
+    include: list[str] = []
+    include_unit: Optional[str]
     include_type: list[str]
-    exclude_type: list[str]
+    exclude: list[str] = []
     exclude_unit: list[str]
+    exclude_type: list[str]
+    required: str | None
+
+    # scope: timers
+    scope_timers: bool
+    timers_warning: float
+    timers_critical: float
+
+    # scope: startup_time
+    scope_startup_time: bool
+    warning: float
+    critical: float
+
+    # backend
+    data_source: Optional[Literal["dbus", "cli"]]
+    with_user_units: bool
+
+    # performance_data
+    performance_data: bool
 
     def __init__(self) -> None:
         self.include = []
@@ -743,7 +755,7 @@ class UnitCache:
         self.__add_unit(unit)
         return unit
 
-    def get(self, name: Optional[str]=None) -> Unit | None:
+    def get(self, name: Optional[str] = None) -> Unit | None:
         if name:
             return self.__units[name]
         return None
@@ -804,7 +816,7 @@ class UnitCache:
 
 
 class CliUnitCache(UnitCache):
-    def __init__(self, with_user_units: bool = False):
+    def __init__(self, with_user_units: bool = False) -> None:
         super().__init__()
         command = ["systemctl", "list-units", "--all"]
         if with_user_units:
@@ -1130,8 +1142,12 @@ class SystemdSummary(Summary):
 # Command line interface (argparse) ###########################################
 
 
-def convert_to_regexp_list(regexp=None, unit_names=None, unit_types=None):
-    result = set()
+def convert_to_regexp_list(
+    regexp: Optional[Sequence[str]] = None,
+    unit_names: Optional[Union[str, Sequence[str]]] = None,
+    unit_types: Optional[Sequence[str]] = None,
+) -> set[str]:
+    result: set[str] = set()
     if regexp:
         for regexp in regexp:
             result.add(regexp)
@@ -1380,6 +1396,7 @@ def get_argparser() -> argparse.ArgumentParser:
         "(cli) binaries to gather the required data for the monitoring "
         "process.",
     )
+
     acquisition.add_argument(
         "--user",
         dest="with_user_units",
@@ -1413,23 +1430,26 @@ def get_argparser() -> argparse.ArgumentParser:
     return parser
 
 
-def normalize_argparser(opts: argparse.Namespace) -> argparse.Namespace:
+def normalize_argparser(opts: argparse.Namespace) -> OptionContainer:
     if opts.data_source == "dbus" and not is_gi:
         opts.data_source = "cli"
 
     opts.include = convert_to_regexp_list(
         regexp=opts.include, unit_names=opts.include_unit, unit_types=opts.include_type
     )
-    # del opts.include_unit
-    del opts.include_type
 
     opts.exclude = convert_to_regexp_list(
         regexp=opts.exclude, unit_names=opts.exclude_unit, unit_types=opts.exclude_type
     )
-    del opts.exclude_type
-    del opts.exclude_unit
 
-    return opts
+    o = cast(OptionContainer, opts)
+
+    # del opts.include_unit
+    del o.include_type
+    del o.exclude_type
+    del o.exclude_unit
+
+    return o
 
 
 @nagiosplugin.guarded(verbose=0)
@@ -1448,8 +1468,7 @@ def main() -> None:
     class.
     """
     global opts
-    opts = get_argparser().parse_args()
-    opts = normalize_argparser(opts)
+    opts = normalize_argparser(get_argparser().parse_args())
 
     global unit_cache
     if opts.data_source == "dbus":
