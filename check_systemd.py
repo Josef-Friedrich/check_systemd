@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import collections.abc
+import logging
 import re
 import subprocess
 from typing import Generator, Literal, Optional, Sequence, Union, cast, get_args
@@ -76,6 +77,12 @@ try:
 except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter("%(message)s"))
+logging.basicConfig(handlers=[handler])
+logger = logging.getLogger(__name__)
 
 __version__: str = "4.0.0"
 
@@ -102,6 +109,7 @@ class OptionContainer:
     returned by the ``argparse`` package."""
 
     verbose: int
+    debug: int
 
     # scope: units
     ignore_inactive_state: bool
@@ -871,6 +879,13 @@ class DbusUnitCache(UnitCache):
         super().__init__()
         all_units = dbus_manager.manager.ListUnits()
         for name, _, load_state, active_state, sub_state, _, _, _, _, _ in all_units:
+            logger.debug(
+                "Dbus ListUnits(): name: %s load_state: %s active_state: %s sub_state: %s",
+                name,
+                load_state,
+                active_state,
+                sub_state,
+            )
             self.add_unit(
                 name=name,
                 active_state=active_state,
@@ -1226,6 +1241,14 @@ def get_argparser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "-d",
+        "--debug",
+        action="count",
+        default=0,
+        help="Increase debug verbosity (use up to 2 times): -d: info -dd: debug.",
+    )
+
+    parser.add_argument(
         "-V",
         "--version",
         action="version",
@@ -1501,6 +1524,18 @@ def main() -> None:
     """
     global opts
     opts = normalize_argparser(get_argparser().parse_args())
+
+    if opts.debug:
+        # NOTSET=0
+        # DEBUG=10
+        # INFO=20
+        # WARN=30
+        # ERROR=40
+        # CRITICAL=50
+        if opts.debug == 1:
+            logger.setLevel(logging.INFO)
+        elif opts.debug > 1:
+            logger.setLevel(logging.DEBUG)
 
     global unit_cache
     if opts.data_source == "dbus":

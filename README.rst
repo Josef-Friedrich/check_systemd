@@ -64,7 +64,7 @@ Command line interface
 
 :: 
 
-    usage: check_systemd [-h] [-v] [-V] [-i] [-I REGEXP] [-u UNIT_NAME]
+    usage: check_systemd [-h] [-v] [-d] [-V] [-i] [-I REGEXP] [-u UNIT_NAME]
                          [--include-type UNIT_TYPE [UNIT_TYPE ...]] [-e REGEXP]
                          [--exclude-unit UNIT_NAME [UNIT_NAME ...]]
                          [--exclude-type UNIT_TYPE] [--required REQUIRED_STATE] [-t]
@@ -79,6 +79,8 @@ Command line interface
     options:
       -h, --help            show this help message and exit
       -v, --verbose         Increase output verbosity (use up to 3 times).
+      -d, --debug           Increase debug verbosity (use up to 2 times): -d: info
+                            -dd: debug.
       -V, --version         show program's version number and exit
 
     Options related to unit selection:
