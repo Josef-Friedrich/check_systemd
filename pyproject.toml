@@ -19,7 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Operating System :: POSIX :: Linux",
-  "Topic :: System :: Networking :: Monitoring"
+  "Topic :: System :: Networking :: Monitoring",
 ]
 
 [tool.poetry.dependencies]
@@ -32,6 +32,8 @@ pytest = "^8"
 readme-patcher = "^0"
 ruff = "^0"
 tox = "^4"
+PyGObject = "^3"
+pygobject-stubs = "^2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
