@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 from tests.helper import execute_main
 
 
-def execute_with_opt_u(argv, list_units="ok"):
+def execute_with_opt_u(argv: list[str], list_units: str = "ok"):
     if "--no-performance-data" not in argv:
         argv.append("--no-performance-data")
     return execute_main(
         argv=argv,
         stdout=[
             "systemctl-list-units_{}.txt".format(list_units),
+            "systemctl-show-nginx_active.txt",
             "systemd-analyze_12.345.txt",
         ],
     )

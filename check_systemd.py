@@ -53,6 +53,7 @@ Presentation (``Summary``)
 
 * :class:`SystemdSummary`
 """
+
 from __future__ import annotations
 
 import argparse
@@ -119,7 +120,7 @@ class OptionContainer:
     exclude: list[str] = []
     exclude_unit: list[str]
     exclude_type: list[str]
-    required: str | None
+    expected_state: str | None
 
     # scope: timers
     scope_timers: bool
@@ -251,12 +252,13 @@ def execute_cli(args: str | Sequence[str]) -> str | None:
             args, stderr=subprocess.PIPE, stdin=subprocess.PIPE, stdout=subprocess.PIPE
         )
         stdout, stderr = p.communicate()
+        logger.debug("Execute command on the command line: %s", " ".join(args))
     except OSError as e:
         raise CheckError(e)
 
     if p.returncode != 0:
         raise CheckError(
-            "The command exits with a none-zero" "return code ({})".format(p.returncode)
+            "The command exits with a none-zero return code ({})".format(p.returncode)
         )
 
     if stderr:
@@ -638,7 +640,7 @@ class Unit:
 
         :return: A Nagios compatible exit code: 0, 1, 2, 3
         """
-        if opts.required and opts.required.lower() != self.active_state:
+        if opts.expected_state and opts.expected_state.lower() != self.active_state:
             return Critical
         if self.load_state == "error" or self.active_state == "failed":
             return Critical
@@ -841,6 +843,36 @@ class UnitCache:
         return counter
 
 
+def _collect_properties(unit_name: str) -> dict[str, str]:
+    stdout = execute_cli(
+        [
+            "systemctl",
+            "show",
+            "--property",
+            "Id",
+            "--property",
+            "ActiveState",
+            "--property",
+            "SubState",
+            "--property",
+            "LoadState",
+            unit_name,
+        ]
+    )
+    if stdout is None:
+        raise CheckSystemdError(f"The unit '{unit_name}' couldn't be found.")
+    rows = stdout.splitlines()
+
+    properties: dict[str, str] = {}
+    for row in rows:
+        index_equal_sign = row.index("=")
+        properties[row[:index_equal_sign]] = row[index_equal_sign + 1 :]
+
+    logger.debug("Properties of unit '%s': %s", unit_name, properties)
+
+    return properties
+
+
 class CliUnitCache(UnitCache):
     def __init__(self, with_user_units: bool = False) -> None:
         super().__init__()
@@ -859,19 +891,14 @@ class CliUnitCache(UnitCache):
                     load_state=_check_load_state(row["load"]),
                 )
 
-
-def _collect_properties(unit_name: str) -> dict[str, str]:
-    stdout = execute_cli(["systemctl", "show", unit_name])
-    if stdout is None:
-        raise CheckSystemdError(f"The unit '{unit_name}' couldn't be found.")
-    rows = stdout.splitlines()
-
-    properties: dict[str, str] = {}
-    for row in rows:
-        index_equal_sign = row.index("=")
-        properties[row[:index_equal_sign]] = row[index_equal_sign + 1 :]
-
-    return properties
+        if opts.include_unit is not None:
+            properties = _collect_properties(opts.include_unit)
+            self.add_unit(
+                name=properties["Id"],
+                active_state=_check_active_state(properties["ActiveState"]),
+                sub_state=_check_sub_state(properties["SubState"]),
+                load_state=_check_load_state(properties["LoadState"]),
+            )
 
 
 class DbusUnitCache(UnitCache):
@@ -1338,11 +1365,12 @@ def get_argparser() -> argparse.ArgumentParser:
     )
 
     units.add_argument(
+        "--state",
         "--required",
-        type=str,
-        metavar="REQUIRED_STATE",
-        dest="required",
-        help="Set the state that the systemd unit must have "
+        "--expected-state",
+        choices=get_args(ActiveState),
+        dest="expected_state",
+        help="Specify the active state that the systemd unit must have "
         "(for example: active, inactive)",
     )
 

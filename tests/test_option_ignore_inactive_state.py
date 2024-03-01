@@ -5,7 +5,11 @@ class TestOptionIgnoreInactiveState:
     def test_with(self) -> None:
         result = execute_main(
             argv=["--unit", "ansible-pull.service"],
-            stdout=["systemctl-list-units_inactive.txt", "systemd-analyze_12.345.txt"],
+            stdout=[
+                "systemctl-list-units_inactive.txt",
+                "systemctl-show-ansible-pull_inactive.txt",
+                "systemd-analyze_12.345.txt",
+            ],
         )
         result.assert_ok()
         result.assert_first_line(
@@ -17,7 +21,11 @@ class TestOptionIgnoreInactiveState:
     def test_ok(self) -> None:
         result = execute_main(
             argv=["--ignore-inactive-state", "--unit", "ansible-pull.service"],
-            stdout=["systemctl-list-units_inactive.txt", "systemd-analyze_12.345.txt"],
+            stdout=[
+                "systemctl-list-units_inactive.txt",
+                "systemctl-show-ansible-pull_inactive.txt",
+                "systemd-analyze_12.345.txt",
+            ],
         )
         result.assert_ok()
         result.assert_first_line(

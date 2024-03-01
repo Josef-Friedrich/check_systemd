@@ -8,7 +8,7 @@ from tests.helper import get_mocks_for_popen
 
 def test_collect_properties() -> None:
     with patch("check_systemd.subprocess.Popen") as Popen:
-        Popen.return_value = get_mocks_for_popen("systemctl-show-nginx.txt")[0]
+        Popen.return_value = get_mocks_for_popen("systemctl-show-nginx_active.txt")[0]
         properties = _collect_properties("unit")
     assert properties["Id"] == "nginx.service"
     assert properties["ActiveState"] == "active"

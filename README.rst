@@ -67,9 +67,10 @@ Command line interface
     usage: check_systemd [-h] [-v] [-d] [-V] [-i] [-I REGEXP] [-u UNIT_NAME]
                          [--include-type UNIT_TYPE [UNIT_TYPE ...]] [-e REGEXP]
                          [--exclude-unit UNIT_NAME [UNIT_NAME ...]]
-                         [--exclude-type UNIT_TYPE] [--required REQUIRED_STATE] [-t]
-                         [-W SECONDS] [-C SECONDS] [-n] [-w SECONDS] [-c SECONDS]
-                         [--dbus | --cli] [--user] [-P | -p]
+                         [--exclude-type UNIT_TYPE]
+                         [--state {active,reloading,inactive,failed,activating,deactivating}]
+                         [-t] [-W SECONDS] [-C SECONDS] [-n] [-w SECONDS]
+                         [-c SECONDS] [--dbus | --cli] [--user] [-P | -p]
 
     Copyright (c) 2014-18 Andrea Briganti <kbytesys@gmail.com>
     Copyright (c) 2019-24 Josef Friedrich <josef@friedrich.rocks>
@@ -117,9 +118,9 @@ Command line interface
                             Name of the systemd unit that is being tested.
       --exclude-type UNIT_TYPE
                             One or more unit types (for example: 'service', 'timer')
-      --required REQUIRED_STATE
-                            Set the state that the systemd unit must have (for
-                            example: active, inactive)
+      --state {active,reloading,inactive,failed,activating,deactivating}, --required {active,reloading,inactive,failed,activating,deactivating}, --expected-state {active,reloading,inactive,failed,activating,deactivating}
+                            Specify the active state that the systemd unit must have
+                            (for example: active, inactive)
 
     Timers related options:
       -t, --timers, --dead-timers

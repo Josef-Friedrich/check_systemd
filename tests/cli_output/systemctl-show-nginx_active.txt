@@ -1,0 +1,4 @@
+Id=nginx.service
+LoadState=loaded
+ActiveState=active
+SubState=running

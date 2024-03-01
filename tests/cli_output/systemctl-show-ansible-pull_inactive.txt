@@ -1,0 +1,4 @@
+Id=ansible-pull.service
+ActiveState=inactive
+SubState=running
+LoadState=loaded
