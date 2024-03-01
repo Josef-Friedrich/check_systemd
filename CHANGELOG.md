@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.0.0...HEAD)</small>
+<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.0...HEAD)</small>
+
+## [v4.1.0]
+
+<small>[Compare with v0.4.0](https://github.com/Josef-Friedrich/check_systemd/compare/v4.0.0...v4.1.0)</small>
+
+### Added
+
+- Add basic debug support (--debug) ([f371f78](https://github.com/Josef-Friedrich/check_systemd/commit/f371f78256bd0a407156abf7a507a3bdd4fcf328) by Josef Friedrich).
+
+### Fixed
+
+- Fix check response for stopped units and units selected with --unit ([dd79ced](https://github.com/Josef-Friedrich/check_systemd/commit/dd79ceddcb23b7924b52c38e916aeea40a2d058e) by Josef Friedrich).
 
 ## [v4.0.0]
 

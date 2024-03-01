@@ -85,7 +85,7 @@ handler.setFormatter(logging.Formatter("%(message)s"))
 logging.basicConfig(handlers=[handler])
 logger = logging.getLogger(__name__)
 
-__version__: str = "4.0.0"
+__version__: str = "4.1.0"
 
 
 is_gi = True
