@@ -513,6 +513,16 @@ files = [
 ]
 
 [[package]]
+name = "pgi"
+version = "0.0.11.2"
+description = "Pure Python GObject Introspection Bindings"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pgi-0.0.11.2.tar.gz", hash = "sha256:5b011ff4d81f83eed4380b0c72876be9b5572c4ed97e2b784dce477183c934f5"},
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.2.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
@@ -874,4 +884,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "355ece9c2405667571c74f4195dd663476a1a6139ae199750c40ebcd894c678e"
+content-hash = "084c3330f8259dd918529f4fb4a526a7e6efe4f04386cb2033c3fd45e0aeb91a"

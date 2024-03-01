@@ -28,12 +28,13 @@ nagiosplugin = "^1.2"
 
 [tool.poetry.group.dev.dependencies]
 nagiosplugin-stubs = "0.5.0"
+pgi = "^0"
+PyGObject = "^3"
+pygobject-stubs = "^2"
 pytest = "^8"
 readme-patcher = "^0"
 ruff = "^0"
 tox = "^4"
-PyGObject = "^3"
-pygobject-stubs = "^2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
