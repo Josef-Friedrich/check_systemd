@@ -89,20 +89,14 @@ __version__: str = "4.0.0"
 
 
 is_gi = True
-"""true if the packages PyGObject (gi) or Pure Python GObject Introspection
-Bindings (pgi) are available."""
+"""true if the package PyGObject (gi) is available."""
 
 try:
-    # Look for gi https://pygobject.readthedocs.io/en/latest/index.html
+    # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
     from gi.repository.Gio import BusType, DBusProxy
 except ImportError:
-    try:
-        # Fallback to pgi Pure Python GObject Introspection Bindings
-        # https://github.com/pygobject/pgi
-        from pgi.repository.Gio import BusType, DBusProxy
-    except ImportError:
-        # Fallback to the command line interface source.
-        is_gi = False
+    # Fallback to the command line interface source.
+    is_gi = False
 
 
 class OptionContainer:
