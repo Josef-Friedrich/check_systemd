@@ -118,8 +118,11 @@ class OptionContainer:
 
     # scope: timers
     scope_timers: bool
-    timers_warning: float
-    timers_critical: float
+    timers_warning: int
+    """-w, --warning"""
+
+    timers_critical: int
+    """-c, --critical"""
 
     # scope: startup_time
     scope_startup_time: bool
@@ -1459,6 +1462,7 @@ def get_argparser() -> argparse.ArgumentParser:
         "-w",
         "--warning",
         default=60,
+        type=int,
         metavar="SECONDS",
         help="Startup time in seconds to result in a warning status. The"
         " default is 60 seconds.",
@@ -1467,8 +1471,9 @@ def get_argparser() -> argparse.ArgumentParser:
     startup_time.add_argument(
         "-c",
         "--critical",
-        metavar="SECONDS",
         default=120,
+        type=int,
+        metavar="SECONDS",
         help="Startup time in seconds to result in a critical status. The"
         " default is 120 seconds.",
     )
