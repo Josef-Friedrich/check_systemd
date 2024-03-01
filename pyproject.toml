@@ -33,6 +33,8 @@ pygobject-stubs = "^2"
 pytest = "^8"
 readme-patcher = "^0"
 ruff = "^0"
+Sphinx = "^7"
+sphinx-rtd-theme = "^2"
 tox = "^4"
 
 [build-system]
