@@ -93,7 +93,7 @@ is_gi = True
 
 try:
     # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
-    from gi.repository.Gio import BusType, DBusProxy
+    from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
 except ImportError:
     # Fallback to the command line interface source.
     is_gi = False
@@ -165,10 +165,12 @@ class DbusManager:
     in the systemd D-Bus API.
     """
 
-    def __init__(self):
-        self.__manager = DBusProxy.new_for_bus_sync(
-            BusType.SYSTEM,
-            0,
+    __manager: DBusProxy
+
+    def __init__(self) -> None:
+        self.__manager = DbusManager.__proxy().new_for_bus_sync(
+            DbusManager.__bus_type().SYSTEM,
+            DbusManager.__flags().NONE,
             None,
             "org.freedesktop.systemd1",
             "/org/freedesktop/systemd1",
@@ -176,8 +178,27 @@ class DbusManager:
             None,
         )
 
+    @staticmethod
+    def __proxy() -> type[DBusProxy]:
+        """List all units."""
+        if DBusProxy:
+            return DBusProxy
+        raise Exception("The package PyGObject (gi) is not available.")
+
+    @staticmethod
+    def __bus_type() -> type[BusType]:
+        if BusType:
+            return BusType
+        raise Exception("The package PyGObject (gi) is not available.")
+
+    @staticmethod
+    def __flags() -> type[DBusProxyFlags]:
+        if DBusProxyFlags:
+            return DBusProxyFlags
+        raise Exception("The package PyGObject (gi) is not available.")
+
     @property
-    def manager(self):
+    def manager(self) -> DBusProxy:
         return self.__manager
 
 
@@ -898,6 +919,11 @@ class CliUnitCache(UnitCache):
 class DbusUnitCache(UnitCache):
     def __init__(self) -> None:
         super().__init__()
+        if dbus_manager is None:
+            raise CheckSystemdError(
+                "The package PyGObject (gi) is not available. "
+                "The D-Bus backend can't be used."
+            )
         all_units = dbus_manager.manager.ListUnits()
         for name, _, load_state, active_state, sub_state, _, _, _, _, _ in all_units:
             logger.debug(

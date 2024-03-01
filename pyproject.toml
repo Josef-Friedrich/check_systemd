@@ -43,3 +43,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 check_systemd = "check_systemd:main"
+
+[tool.pyright]
+reportMissingModuleSource = false
