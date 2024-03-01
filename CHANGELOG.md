@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.0...HEAD)</small>
 
-## [v4.1.0]
+## [v4.1.0] - 2024-03-01
 
 <small>[Compare with v0.4.0](https://github.com/Josef-Friedrich/check_systemd/compare/v4.0.0...v4.1.0)</small>
 
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix check response for stopped units and units selected with --unit ([dd79ced](https://github.com/Josef-Friedrich/check_systemd/commit/dd79ceddcb23b7924b52c38e916aeea40a2d058e) by Josef Friedrich).
 
-## [v4.0.0]
+## [v4.0.0] - 2024-02-20
 
 <small>[Compare with v3.1.0](https://github.com/Josef-Friedrich/check_systemd/compare/v3.1.0...v4.0.0)</small>
 
