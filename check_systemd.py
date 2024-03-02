@@ -62,6 +62,7 @@ import logging
 import re
 import subprocess
 from typing import (
+    Any,
     Generator,
     Literal,
     NamedTuple,
@@ -1146,8 +1147,10 @@ class Unit:
         return Ok
 
 
-class SystemdUnitTypesList(collections.abc.MutableSequence):
-    def __init__(self, *args):
+class SystemdUnitTypesList(collections.abc.MutableSequence[str]):
+    unit_types: list[str]
+
+    def __init__(self, *args: str) -> None:
         self.unit_types = list()
         self.__all_types = (
             "service",
@@ -1167,24 +1170,25 @@ class SystemdUnitTypesList(collections.abc.MutableSequence):
     def __len__(self) -> int:
         return len(self.unit_types)
 
-    def __getitem__(self, index):
-        return self.unit_types[index]
+    def __getitem__(self, index: int | slice) -> Any:
+        if isinstance(index, int):
+            return self.unit_types[index]
 
-    def __delitem__(self, index) -> None:
+    def __delitem__(self, index: int | slice) -> None:
         del self.unit_types[index]
 
-    def __setitem__(self, index, unit_type) -> None:
+    def __setitem__(self, index: int | slice, unit_type: str) -> None:
         self.__check_type(unit_type)
         self.unit_types[index] = unit_type
 
     def __str__(self) -> str:
         return str(self.unit_types)
 
-    def insert(self, index, unit_type) -> None:
-        self.__check_type(unit_type)
-        self.unit_types.insert(index, unit_type)
+    def insert(self, index: int, value: str) -> None:
+        self.__check_type(value)
+        self.unit_types.insert(index, value)
 
-    def __check_type(self, type) -> None:
+    def __check_type(self, type: str) -> None:
         if type not in self.__all_types:
             raise ValueError(
                 "The given type '{}' is not a valid systemd " "unit type.".format(type)
