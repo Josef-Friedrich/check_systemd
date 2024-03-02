@@ -2,7 +2,7 @@ test:
 	poetry run tox
 
 test_unmocked:
-	pytest tests/_test_unmocked.py
+	pytest --capture tee-sys tests/_test_unmocked.py
 
 install: update
 

@@ -88,6 +88,16 @@ except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
 
+is_gi = True
+"""TODO remove, Check for existence of DBusProxy true if the package PyGObject (gi) is available."""
+
+try:
+    # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
+    from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
+except ImportError:
+    # Fallback to the command line interface source.
+    is_gi = False
+
 
 __version__: str = "4.1.0"
 
@@ -332,96 +342,8 @@ class DataSource:
     def get_all_units(self, user: bool) -> Generator[DataSource.Unit, None, None]:
         ...
 
-
-class DbusSource(DataSource):
-    """
-    This class holds the main entry point object of the D-Bus systemd API. See
-    the section `The Manager Object
-    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#The%20Manager%20Object>`_
-    in the systemd D-Bus API.
-    """
-
-    class UnitTuple(NamedTuple):
-        name: str
-        """The primary unit name as string"""
-
-        description: str
-        """The human readable description string"""
-
-        load_state: LoadState
-        """The load state (i.e. whether the unit file has been loaded successfully)"""
-
-        active_state: ActiveState
-        """The active state (i.e. whether the unit is currently started or not)"""
-
-        sub_state: SubState
-        """The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)"""
-
-        followed_by: str
-        """A unit that is being followed in its state by this unit, if there is any, otherwise the empty string."""
-
-        unit_object_path: str
-        """The unit object path"""
-
-        job_id: str
-        """If there is a job queued for the job unit, the numeric job id, 0 otherwise"""
-
-        job_type: str
-        """The job type as string"""
-
-        job_object_path: str
-        """The job object path"""
-
-    class DbusApi:
-        def ListUnits(self) -> list[DbusSource.UnitTuple]:
-            ...
-
-        """ListUnits() returns an array of all currently loaded units.
-        Note that units may be known by multiple names at the same name, and hence
-        there might be more unit names loaded than actual units behind them.
-        The array consists of structures with the following elements:"""
-
-    def __get_manager(self, user: bool = False) -> DbusSource.DbusApi:
-        """List all units."""
-        if not DBusProxy or not BusType or not DBusProxyFlags:
-            raise Exception("The package PyGObject (gi) is not available.")
-
-        bus_type = BusType.SESSION if user else BusType.SYSTEM
-
-        return cast(
-            DbusSource.DbusApi,
-            DBusProxy.new_for_bus_sync(
-                bus_type,
-                DBusProxyFlags.NONE,
-                None,
-                "org.freedesktop.systemd1",
-                "/org/freedesktop/systemd1",
-                "org.freedesktop.systemd1.Manager",
-                None,
-            ),
-        )
-
-    def get_all_units(
-        self, user: bool = False
-    ) -> Generator[DataSource.Unit, None, None]:
-        for (
-            name,
-            _,
-            load_state,
-            active_state,
-            sub_state,
-            _,
-            _,
-            _,
-            _,
-            _,
-        ) in self.__get_manager(user).ListUnits():
-            yield self.Unit(
-                name=name,
-                active_state=active_state,
-                sub_state=sub_state,
-                load_state=load_state,
-            )
+    def get_startup_time(self) -> float | None:
+        ...
 
 
 class CliSource(DataSource):
@@ -648,6 +570,124 @@ class CliSource(DataSource):
                     load_state=row["load"],
                 )
 
+    def get_startup_time(self) -> float | None:
+        stdout = None
+        try:
+            stdout = self.__execute_cli(["systemd-analyze"])
+        except CheckError:
+            pass
+
+        if stdout:
+            # First line:
+            # Startup finished in 1.672s (kernel) + 21.378s (userspace) =
+            # 23.050s
+
+            # On raspian no second line
+            # Second line:
+            # graphical.target reached after 1min 2.154s in userspace
+            match = re.search(r"reached after (.+) in userspace", stdout)
+
+            if not match:
+                match = re.search(r" = (.+)\n", stdout)
+
+            # Output when boot process is not finished:
+            # Bootup is not yet finished. Please try again later.
+            if match:
+                format_timespan_to_seconds(match.group(1))
+
+
+class DbusSource(CliSource):
+    """
+    TODO Intherit from DataSource if the full Dbus Api is implemented
+
+    This class holds the main entry point object of the D-Bus systemd API. See
+    the section `The Manager Object
+    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#The%20Manager%20Object>`_
+    in the systemd D-Bus API.
+    """
+
+    class UnitTuple(NamedTuple):
+        name: str
+        """The primary unit name as string"""
+
+        description: str
+        """The human readable description string"""
+
+        load_state: LoadState
+        """The load state (i.e. whether the unit file has been loaded successfully)"""
+
+        active_state: ActiveState
+        """The active state (i.e. whether the unit is currently started or not)"""
+
+        sub_state: SubState
+        """The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)"""
+
+        followed_by: str
+        """A unit that is being followed in its state by this unit, if there is any, otherwise the empty string."""
+
+        unit_object_path: str
+        """The unit object path"""
+
+        job_id: str
+        """If there is a job queued for the job unit, the numeric job id, 0 otherwise"""
+
+        job_type: str
+        """The job type as string"""
+
+        job_object_path: str
+        """The job object path"""
+
+    class DbusApi:
+        def ListUnits(self) -> list[DbusSource.UnitTuple]:
+            ...
+
+        """ListUnits() returns an array of all currently loaded units.
+        Note that units may be known by multiple names at the same name, and hence
+        there might be more unit names loaded than actual units behind them.
+        The array consists of structures with the following elements:"""
+
+    def __get_manager(self, user: bool = False) -> DbusSource.DbusApi:
+        """List all units."""
+        if not DBusProxy or not BusType or not DBusProxyFlags:
+            raise Exception("The package PyGObject (gi) is not available.")
+
+        bus_type = BusType.SESSION if user else BusType.SYSTEM
+
+        return cast(
+            DbusSource.DbusApi,
+            DBusProxy.new_for_bus_sync(
+                bus_type,
+                DBusProxyFlags.NONE,
+                None,
+                "org.freedesktop.systemd1",
+                "/org/freedesktop/systemd1",
+                "org.freedesktop.systemd1.Manager",
+                None,
+            ),
+        )
+
+    def get_all_units(
+        self, user: bool = False
+    ) -> Generator[DataSource.Unit, None, None]:
+        for (
+            name,
+            _,
+            load_state,
+            active_state,
+            sub_state,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) in self.__get_manager(user).ListUnits():
+            yield self.Unit(
+                name=name,
+                active_state=active_state,
+                sub_state=sub_state,
+                load_state=load_state,
+            )
+
 
 class Logger:
     __logger: logging.Logger
@@ -708,17 +748,6 @@ class Logger:
 
 
 logger = Logger()
-
-
-is_gi = True
-"""true if the package PyGObject (gi) is available."""
-
-try:
-    # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
-    from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
-except ImportError:
-    # Fallback to the command line interface source.
-    is_gi = False
 
 
 class OptionContainer:
@@ -1531,6 +1560,29 @@ class TimersContext(Context):
 # scope: startup_time #########################################################
 
 
+class StartupTimeResourceNg(Resource):
+    """Resource that calls ``systemd-analyze`` on the command line to get
+    informations about the startup time.
+
+    `src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`_
+    """
+
+    __source: DataSource
+
+    def __init__(self, source: DataSource) -> None:
+        super(StartupTimeResourceNg, self).__init__()
+        self.__source = source
+
+    def probe(self) -> Generator[Metric, None, None]:
+        startup_time = self.__source.get_startup_time()
+        if startup_time:
+            yield Metric(
+                name="startup_time",
+                value=startup_time,
+                context="startup_time",
+            )
+
+
 class StartupTimeResource(Resource):
     """Resource that calls ``systemd-analyze`` on the command line to get
     informations about the startup time.
@@ -2034,8 +2086,13 @@ def main() -> None:
     opts = normalize_argparser(get_argparser().parse_args())
 
     logger.set_level(opts.debug)
-
     logger.show_levels()
+
+    # source: DataSource
+    # if is_gi and opts.data_source == "dbus":
+    #     source = DbusSource()
+    # else:
+    #     source = CliSource()
 
     global unit_cache
     if opts.data_source == "dbus":
