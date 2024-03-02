@@ -895,15 +895,15 @@ class UnitCache:
         states: Sequence[str],
         include: str | Sequence[str] | None = None,
         exclude: str | Sequence[str] | None = None,
-    ) -> dict:
-        states_normalized = []
-        counter = {}
+    ) -> dict[str, int]:
+        states_normalized: list[dict[str, str]] = []
+        counter: dict[str, int] = {}
         for state_spec in states:
             # state_proerty:state_value
             # for example: active_state:failed
             state_property = state_spec.split(":")[0]
             state_value = state_spec.split(":")[1]
-            state = {
+            state: dict[str, str] = {
                 "property": state_property,
                 "value": state_value,
                 "spec": state_spec,

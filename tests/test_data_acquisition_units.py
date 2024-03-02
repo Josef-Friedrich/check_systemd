@@ -1,5 +1,8 @@
 """Tests related to data acquisition of systemd units."""
 
+from __future__ import annotations
+
+from typing import Sequence
 
 from check_systemd import Unit, UnitCache, UnitNameFilter
 
@@ -48,6 +51,8 @@ class TestClassUnit:
 
 
 class TestClassUnitCache:
+    unit_cache: UnitCache
+
     def setup_method(self) -> None:
         self.unit_cache = UnitCache()
         self.unit_cache.add_unit(unit_modem_manager)
@@ -60,8 +65,12 @@ class TestClassUnitCache:
         self.unit_cache.add_unit(unit_nmdb)
         self.unit_cache.add_unit(unit_php)
 
-    def list(self, include=None, exclude=None):
-        units = []
+    def list(
+        self,
+        include: str | Sequence[str] | None = None,
+        exclude: str | Sequence[str] | None = None,
+    ) -> list[str]:
+        units: list[str] = []
         for unit in self.unit_cache.list(include=include, exclude=exclude):
             units.append(unit.name)
         return units
@@ -71,14 +80,15 @@ class TestClassUnitCache:
         unit = self.unit_cache.add_unit(
             name="test.service",
             active_state="active",
-            sub_state="sub",
-            load_state="load",
+            sub_state="running",
+            load_state="loaded",
         )
         assert unit.name == "test.service"
         assert 9 == self.unit_cache.count
 
     def test_method_get(self) -> None:
         unit = self.unit_cache.get(name="ModemManager.service")
+        assert unit
         assert "ModemManager.service" == unit.name
 
     def test_method_list(self) -> None:
@@ -130,8 +140,12 @@ class TestClassUnitNameFilter:
         self.filter.add("nmbd.timer")
         self.filter.add("php7.4-fpm.service")
 
-    def list(self, include=None, exclude=None):
-        unit_names = []
+    def list(
+        self,
+        include: str | Sequence[str] | None = None,
+        exclude: str | Sequence[str] | None = None,
+    ):
+        unit_names: list[str] = []
         for unit_name in self.filter.list(include=include, exclude=exclude):
             unit_names.append(unit_name)
         return unit_names

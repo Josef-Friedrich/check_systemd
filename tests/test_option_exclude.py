@@ -1,7 +1,7 @@
-from tests.helper import execute_main
+from tests.helper import MockResult, execute_main
 
 
-def execute_with_opt_e(argv, unit_suffix="failed"):
+def execute_with_opt_e(argv: list[str], unit_suffix: str = "failed") -> MockResult:
     return execute_main(
         argv=argv,
         stdout=[
