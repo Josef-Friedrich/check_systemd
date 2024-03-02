@@ -141,12 +141,6 @@ process of deactivation.
 """
 
 
-def _check_active_state(state: object) -> ActiveState | None:
-    states: tuple[ActiveState] = get_args(ActiveState)
-    if state in states:
-        return state
-
-
 SubState = Literal[
     "abandoned",
     "activating-done",
@@ -236,12 +230,6 @@ of the systemd source code:
 """
 
 
-def _check_sub_state(state: object) -> SubState | None:
-    states: tuple[SubState] = get_args(SubState)
-    if state in states:
-        return state
-
-
 LoadState = Literal[
     "stub", "loaded", "not-found", "bad-setting", "error", "merged", "masked"
 ]
@@ -275,12 +263,6 @@ was already active).
 """
 
 
-def _check_load_state(state: object) -> LoadState | None:
-    states: tuple[LoadState] = get_args(LoadState)
-    if state in states:
-        return state
-
-
 T = TypeVar("T")
 """For UnitCache. Can not be an inner typevar because of pylance"""
 
@@ -305,19 +287,22 @@ class Source:
 
         load_state: LoadState
 
-        def __check_active_state(self, state: object) -> ActiveState:
+        @staticmethod
+        def __check_active_state(state: object) -> ActiveState:
             states: tuple[ActiveState] = get_args(ActiveState)
             if state in states:
                 return state
             raise ValueError(f"Invalid active state: {state}")
 
-        def __check_sub_state(self, state: object) -> SubState:
+        @staticmethod
+        def __check_sub_state(state: object) -> SubState:
             states: tuple[SubState] = get_args(SubState)
             if state in states:
                 return state
             raise ValueError(f"Invalid sub state: {state}")
 
-        def __check_load_state(self, state: object) -> LoadState:
+        @staticmethod
+        def __check_load_state(state: object) -> LoadState:
             states: tuple[LoadState] = get_args(LoadState)
             if state in states:
                 return state
@@ -758,9 +743,9 @@ class CliSource(Source):
 
         return Source.Unit(
             name=properties["Id"],
-            active_state=_check_active_state(properties["ActiveState"]),
-            sub_state=_check_sub_state(properties["SubState"]),
-            load_state=_check_load_state(properties["LoadState"]),
+            active_state=properties["ActiveState"],
+            sub_state=properties["SubState"],
+            load_state=properties["LoadState"],
         )
 
     def get_all_units(self, user: bool = False) -> Generator[Source.Unit, None, None]:
