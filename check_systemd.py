@@ -80,12 +80,68 @@ except ImportError:
     exit(3)
 
 
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter("%(message)s"))
-logging.basicConfig(handlers=[handler])
-logger = logging.getLogger(__name__)
-
 __version__: str = "4.1.0"
+
+
+class Logger:
+    __logger: logging.Logger
+
+    __BLUE = "\x1b[0;34m"
+    __PURPLE = "\x1b[0;35m"
+    __CYAN = "\x1b[0;36m"
+    __RESET = "\x1b[0m"
+
+    __INFO = logging.INFO
+    __DEBUG = logging.DEBUG
+    __VERBOSE = 5
+
+    def __init__(self) -> None:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.basicConfig(handlers=[handler])
+        self.__logger = logging.getLogger(__name__)
+
+    def set_level(self, level: int) -> None:
+        # NOTSET=0
+        # custom level: VERBOSE=5
+        # DEBUG=10
+        # INFO=20
+        # WARN=30
+        # ERROR=40
+        # CRITICAL=50
+        if level == 1:
+            self.__logger.setLevel(logging.INFO)
+        elif level == 2:
+            self.__logger.setLevel(logging.DEBUG)
+        elif level > 2:
+            self.__logger.setLevel(5)
+
+    def __log(self, level: int, color: str, msg: str, *args: object) -> None:
+        a: list[str] = []
+        for arg in args:
+            a.append(color + str(arg) + self.__RESET)
+        self.__logger.log(level, msg, *a)
+
+    def info(self, msg: str, *args: object) -> None:
+        """Log ``-d``"""
+        self.__log(self.__INFO, self.__BLUE, msg, *args)
+
+    def debug(self, msg: str, *args: object) -> None:
+        """Log ``-dd``"""
+        self.__log(self.__DEBUG, self.__PURPLE, msg, *args)
+
+    def verbose(self, msg: str, *args: object) -> None:
+        """Log ``-ddd``"""
+        self.__log(self.__VERBOSE, self.__CYAN, msg, *args)
+
+    def show_levels(self) -> None:
+        msg = "log level %s (%s): %s"
+        self.info(msg, 1, "info", "-d")
+        self.debug(msg, 2, "debug", "-dd")
+        self.verbose(msg, 3, "verbose", "-ddd")
+
+
+logger = Logger()
 
 
 is_gi = True
@@ -285,6 +341,7 @@ def execute_cli(args: str | Sequence[str]) -> str | None:
 
     if stdout:
         stdout = stdout.decode("utf-8")
+        logger.verbose("stdout:\n%s", stdout)
         return stdout
     return None
 
@@ -1579,17 +1636,9 @@ def main() -> None:
     global opts
     opts = normalize_argparser(get_argparser().parse_args())
 
-    if opts.debug:
-        # NOTSET=0
-        # DEBUG=10
-        # INFO=20
-        # WARN=30
-        # ERROR=40
-        # CRITICAL=50
-        if opts.debug == 1:
-            logger.setLevel(logging.INFO)
-        elif opts.debug > 1:
-            logger.setLevel(logging.DEBUG)
+    logger.set_level(opts.debug)
+
+    logger.show_levels()
 
     global unit_cache
     if opts.data_source == "dbus":
