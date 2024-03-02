@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from check_systemd import DataSource
+from check_systemd import Source
 
-Unit = DataSource.Unit
-UnitCache = DataSource.UnitCache
-UnitNameFilter = DataSource.UnitNameFilter
+Unit = Source.Unit
+UnitCache = Source.UnitCache
+UnitNameFilter = Source.UnitNameFilter
 
 unit_modem_manager = Unit(
     name="ModemManager.service",
@@ -77,15 +77,15 @@ class TestClassUnitCache:
 
     def setup_method(self) -> None:
         self.unit_cache = UnitCache()
-        self.unit_cache.add_unit(unit_modem_manager)
-        self.unit_cache.add_unit(unit_mongod)
-        self.unit_cache.add_unit(unit_mysql)
-        self.unit_cache.add_unit(unit_named)
-        self.unit_cache.add_unit(unit_networking)
-        self.unit_cache.add_unit(unit_nginx)
-        self.unit_cache.add_unit(unit_modem_manager)
-        self.unit_cache.add_unit(unit_nmdb)
-        self.unit_cache.add_unit(unit_php)
+        self.unit_cache.add(unit_modem_manager)
+        self.unit_cache.add(unit_mongod)
+        self.unit_cache.add(unit_mysql)
+        self.unit_cache.add(unit_named)
+        self.unit_cache.add(unit_networking)
+        self.unit_cache.add(unit_nginx)
+        self.unit_cache.add(unit_modem_manager)
+        self.unit_cache.add(unit_nmdb)
+        self.unit_cache.add(unit_php)
 
     def filter(
         self,
@@ -96,17 +96,6 @@ class TestClassUnitCache:
         for unit in self.unit_cache.filter(include=include, exclude=exclude):
             units.append(unit.name)
         return units
-
-    def test_method_add_with_kwargs(self) -> None:
-        assert 8 == self.unit_cache.count
-        unit = self.unit_cache.add_unit(
-            name="test.service",
-            active_state="active",
-            sub_state="running",
-            load_state="loaded",
-        )
-        assert unit.name == "test.service"
-        assert 9 == self.unit_cache.count
 
     def test_method_get(self) -> None:
         unit = self.unit_cache.get(name="ModemManager.service")
