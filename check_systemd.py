@@ -1139,7 +1139,10 @@ class TimersContext(Context):
 
 class StartupTimeResource(Resource):
     """Resource that calls ``systemd-analyze`` on the command line to get
-    informations about the startup time."""
+    informations about the startup time.
+
+    `src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`_
+    """
 
     def probe(self) -> Generator[Metric, None, None]:
         """Query system state and return metrics.
