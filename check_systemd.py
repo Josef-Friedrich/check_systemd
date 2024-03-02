@@ -573,7 +573,7 @@ class CliSource(DataSource):
     def get_startup_time(self) -> float | None:
         stdout = None
         try:
-            stdout = self.__execute_cli(["systemd-analyze"])
+            stdout = CliSource.__execute_cli(["systemd-analyze"])
         except CheckError:
             pass
 
@@ -593,7 +593,7 @@ class CliSource(DataSource):
             # Output when boot process is not finished:
             # Bootup is not yet finished. Please try again later.
             if match:
-                format_timespan_to_seconds(match.group(1))
+                return format_timespan_to_seconds(match.group(1))
 
 
 class DbusSource(CliSource):
@@ -1560,7 +1560,7 @@ class TimersContext(Context):
 # scope: startup_time #########################################################
 
 
-class StartupTimeResourceNg(Resource):
+class StartupTimeResource(Resource):
     """Resource that calls ``systemd-analyze`` on the command line to get
     informations about the startup time.
 
@@ -1570,7 +1570,7 @@ class StartupTimeResourceNg(Resource):
     __source: DataSource
 
     def __init__(self, source: DataSource) -> None:
-        super(StartupTimeResourceNg, self).__init__()
+        super(StartupTimeResource, self).__init__()
         self.__source = source
 
     def probe(self) -> Generator[Metric, None, None]:
@@ -1581,48 +1581,6 @@ class StartupTimeResourceNg(Resource):
                 value=startup_time,
                 context="startup_time",
             )
-
-
-class StartupTimeResource(Resource):
-    """Resource that calls ``systemd-analyze`` on the command line to get
-    informations about the startup time.
-
-    `src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`_
-    """
-
-    def probe(self) -> Generator[Metric, None, None]:
-        """Query system state and return metrics.
-
-        :return: generator that emits
-          :class:`~nagiosplugin.metric.Metric` objects
-        """
-        stdout = None
-        try:
-            stdout = execute_cli(["systemd-analyze"])
-        except CheckError:
-            pass
-
-        if stdout:
-            # First line:
-            # Startup finished in 1.672s (kernel) + 21.378s (userspace) =
-            # 23.050s
-
-            # On raspian no second line
-            # Second line:
-            # graphical.target reached after 1min 2.154s in userspace
-            match = re.search(r"reached after (.+) in userspace", stdout)
-
-            if not match:
-                match = re.search(r" = (.+)\n", stdout)
-
-            # Output when boot process is not finished:
-            # Bootup is not yet finished. Please try again later.
-            if match:
-                yield Metric(
-                    name="startup_time",
-                    value=format_timespan_to_seconds(match.group(1)),
-                    context="startup_time",
-                )
 
 
 class StartupTimeContext(ScalarContext):
@@ -2088,11 +2046,11 @@ def main() -> None:
     logger.set_level(opts.debug)
     logger.show_levels()
 
-    # source: DataSource
-    # if is_gi and opts.data_source == "dbus":
-    #     source = DbusSource()
-    # else:
-    #     source = CliSource()
+    source: DataSource
+    if is_gi and opts.data_source == "dbus":
+        source = DbusSource()
+    else:
+        source = CliSource()
 
     global unit_cache
     if opts.data_source == "dbus":
@@ -2104,7 +2062,7 @@ def main() -> None:
         UnitsResource(),
         UnitsContext(),
         SystemdSummary(),
-        StartupTimeResource(),
+        StartupTimeResource(source),
         StartupTimeContext(),
     ]
 
