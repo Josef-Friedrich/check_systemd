@@ -92,15 +92,14 @@ except ImportError:
     print("Failed to import the NagiosPlugin library.")
     exit(3)
 
-is_gi = True
-"""TODO remove, Check for existence of DBusProxy true if the package PyGObject (gi) is available."""
+is_dbus = True
 
 try:
     # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
     from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
 except ImportError:
     # Fallback to the command line interface source.
-    is_gi = False
+    is_dbus = False
 
 
 __version__: str = "4.1.0"
@@ -1093,14 +1092,6 @@ class DbusManager:
         return self.__manager
 
 
-dbus_manager = None
-"""
-The systemd D-Bus API main entry point object, the so called “manager”.
-"""
-if is_gi:
-    dbus_manager = DbusManager()
-
-
 # Unit abstraction ############################################################
 
 
@@ -1736,7 +1727,7 @@ def get_argparser() -> argparse.ArgumentParser:
 
 
 def normalize_argparser(opts: argparse.Namespace) -> OptionContainer:
-    if opts.data_source == "dbus" and not is_gi:
+    if opts.data_source == "dbus" and not is_dbus:
         opts.data_source = "cli"
 
     opts.include = convert_to_regexp_list(
@@ -1779,7 +1770,7 @@ def main() -> None:
     logger.show_levels()
 
     source: Source
-    if is_gi and opts.data_source == "dbus":
+    if is_dbus and opts.data_source == "dbus":
         source = DbusSource()
     else:
         source = CliSource()
