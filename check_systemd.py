@@ -57,7 +57,6 @@ Presentation (``Summary``)
 from __future__ import annotations
 
 import argparse
-import collections.abc
 import logging
 import re
 import subprocess
@@ -65,6 +64,7 @@ from typing import (
     Any,
     Generator,
     Literal,
+    MutableSequence,
     NamedTuple,
     Optional,
     Sequence,
@@ -1147,7 +1147,7 @@ class Unit:
         return Ok
 
 
-class SystemdUnitTypesList(collections.abc.MutableSequence[str]):
+class SystemdUnitTypesList(MutableSequence[str]):
     unit_types: list[str]
 
     def __init__(self, *args: str) -> None:
