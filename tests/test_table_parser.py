@@ -2,19 +2,21 @@ from __future__ import annotations
 
 from typing import Optional
 
-from check_systemd import TableParser
+from check_systemd import CliSource
 from tests.helper import convert_to_bytes
+
+Table = CliSource.Table
 
 
 def read_stdout(file_name: str) -> str:
     return convert_to_bytes(file_name).decode("utf-8")
 
 
-def get_parser() -> TableParser:
-    return TableParser(read_stdout("systemctl-list-units_v246.txt"))
+def get_parser() -> Table:
+    return Table(read_stdout("systemctl-list-units_v246.txt"))
 
 
-class TestTableParser:
+class TestTable:
     def test_initialization(self) -> None:
         parser = get_parser()
         assert "description" in parser.header_row
@@ -24,13 +26,13 @@ class TestTableParser:
         assert ["", "unit", "load", "active", "sub", "description"] == parser.columns
 
     def test_detect_column_lengths(self) -> None:
-        detect = TableParser._TableParser__detect_lengths  # type: ignore
+        detect = Table._Table__detect_lengths  # type: ignore
         assert [3, 3] == detect("1  2  3")
         assert [2, 3, 3] == detect("  1  2  3  ")
         assert [2, 2, 3, 2, 3, 2] == detect("  1 1  2 2  3 3  ")
 
     def test_split_line_into_columns(self) -> None:
-        split = TableParser._TableParser__split_row  # type: ignore
+        split = Table._Table__split_row  # type: ignore
         assert ["123", "456", "789"] == split("123456789", [3, 3])
         assert ["UNIT", "STATE", "LOAD"] == split("UNIT  STATE  LOAD  ", [6, 7])
 
@@ -62,7 +64,7 @@ class TestTableParser:
         assert "systemd-tmpfiles-clean.timer" == row["unit"]
 
     def test_narrow_column_separators(self) -> None:
-        parser = TableParser(read_stdout("systemctl-list-timers_all-n-a.txt"))
+        parser = Table(read_stdout("systemctl-list-timers_all-n-a.txt"))
         row = parser.get_row(1)
         assert "n/a" == row["next"]
         assert "n/a" == row["left"]

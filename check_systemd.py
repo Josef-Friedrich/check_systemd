@@ -60,6 +60,7 @@ import argparse
 import logging
 import re
 import subprocess
+from dataclasses import dataclass
 from typing import (
     Any,
     Generator,
@@ -340,10 +341,19 @@ class DataSource:
                 return Critical
             return Ok
 
-    def get_all_units(self, user: bool) -> Generator[DataSource.Unit, None, None]:
+    @dataclass
+    class Timer:
+        name: str
+        next: Optional[float]
+        passed: Optional[float]
+
+    def get_all_units(self, user: bool) -> Generator[DataSource.Unit, Any, None]:
         ...
 
     def get_startup_time(self) -> float | None:
+        ...
+
+    def get_all_timers(self) -> Generator[DataSource.Timer, Any, None]:
         ...
 
 
@@ -517,6 +527,44 @@ class CliSource(DataSource):
             return stdout
         return None
 
+    @staticmethod
+    def __convert_to_sec(fmt_timespan: str) -> float:
+        """Convert a timespan format string into secondes. Take a look at the
+        systemd `time-util.c
+        <https://github.com/systemd/systemd/blob/master/src/basic/time-util.c>`_
+        source code.
+
+        :param fmt_timespan: for example ``2.345s`` or ``3min 45.234s`` or
+        ``34min left`` or ``2 months 8 days``
+
+        :return: The seconds
+        """
+        for replacement in [
+            ["years", "y"],
+            ["months", "month"],
+            ["weeks", "w"],
+            ["days", "d"],
+        ]:
+            fmt_timespan = fmt_timespan.replace(" " + replacement[0], replacement[1])
+        seconds = {
+            "y": 31536000,  # 365 * 24 * 60 * 60
+            "month": 2592000,  # 30 * 24 * 60 * 60
+            "w": 604800,  # 7 * 24 * 60 * 60
+            "d": 86400,  # 24 * 60 * 60
+            "h": 3600,  # 60 * 60
+            "min": 60,
+            "s": 1,
+            "ms": 0.001,
+        }
+        result = 0
+        for span in fmt_timespan.split():
+            match = re.search(r"([\d\.]+)([a-z]+)", span)
+            if match:
+                value = match.group(1)
+                unit = match.group(2)
+                result += float(value) * seconds[unit]
+        return round(float(result), 3)
+
     def get_unit(self, name: str) -> Unit:
         properties = _collect_properties(name)
 
@@ -595,6 +643,34 @@ class CliSource(DataSource):
             # Bootup is not yet finished. Please try again later.
             if match:
                 return format_timespan_to_seconds(match.group(1))
+
+    def get_all_timers(self) -> Generator[DataSource.Timer, Any, None]:
+        stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
+
+        # NEXT                          LEFT
+        # Sat 2020-05-16 15:11:15 CEST  34min left
+
+        # LAST                          PASSED
+        # Sat 2020-05-16 14:31:56 CEST  4min 20s ago
+
+        # UNIT             ACTIVATES
+        # apt-daily.timer  apt-daily.service
+        if stdout:
+            table_parser = CliSource.Table(stdout)
+            table_parser.check_header(("unit", "next", "passed"))
+
+            for row in table_parser.list_rows():
+                unit = row["unit"]
+
+                next: Optional[float] = None
+                passed: Optional[float] = None
+
+                if row["next"] != "n/a":
+                    next = CliSource.__convert_to_sec(row["next"])
+                if row["passed"] != "n/a":
+                    passed = CliSource.__convert_to_sec(row["passed"])
+
+                yield DataSource.Timer(name=unit, next=next, passed=passed)
 
 
 class DbusSource(CliSource):
@@ -2029,7 +2105,7 @@ def normalize_argparser(opts: argparse.Namespace) -> OptionContainer:
     return o
 
 
-@nagiosplugin.guarded(verbose=0)
+@nagiosplugin.guarded(verbose=0)  # type: ignore
 def main() -> None:
     """The main entry point of the monitoring plugin. First the command line
     arguments are read into the variable ``opts``. The configuration of this
