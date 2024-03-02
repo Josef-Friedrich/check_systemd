@@ -119,15 +119,16 @@ class OptionContainer:
     # scope: timers
     scope_timers: bool
     timers_warning: int
-    """-w, --warning"""
 
     timers_critical: int
-    """-c, --critical"""
 
     # scope: startup_time
     scope_startup_time: bool
-    warning: float
-    critical: float
+    warning: int
+    """-w, --warning"""
+
+    critical: int
+    """-c, --critical"""
 
     # backend
     data_source: Optional[Literal["dbus", "cli"]]
