@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from tests.helper import MPopen, execute_main
 
 

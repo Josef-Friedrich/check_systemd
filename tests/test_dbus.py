@@ -1,4 +1,5 @@
 """Test the D-Bus API as a data source."""
+from __future__ import annotations
 
 from unittest.mock import patch
 

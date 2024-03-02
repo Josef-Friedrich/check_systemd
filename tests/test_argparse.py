@@ -1,5 +1,6 @@
 """Test the command line interface. The CLI interface is implemented with
 argparse."""
+from __future__ import annotations
 
 import io
 import subprocess

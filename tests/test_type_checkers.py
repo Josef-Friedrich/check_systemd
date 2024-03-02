@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from check_systemd import (
     _check_active_state,  # type: ignore
     _check_load_state,  # type: ignore
