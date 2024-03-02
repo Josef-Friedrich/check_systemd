@@ -1142,41 +1142,6 @@ def format_timespan_to_seconds(fmt_timespan: str) -> float:
     return round(float(result), 3)
 
 
-def execute_cli(args: str | Sequence[str]) -> str | None:
-    """Execute a command on the command line (cli = command line interface))
-    and capture the stdout. This is a wrapper around ``subprocess.Popen``.
-
-    :param args: A list of programm arguments.
-
-    :raises nagiosplugin.CheckError: If the command produces some stderr output
-      or if an OSError exception occurs.
-
-    :return: The stdout of the command.
-    """
-    try:
-        p = subprocess.Popen(
-            args, stderr=subprocess.PIPE, stdin=subprocess.PIPE, stdout=subprocess.PIPE
-        )
-        stdout, stderr = p.communicate()
-        logger.debug("Execute command on the command line: %s", " ".join(args))
-    except OSError as e:
-        raise CheckError(e)
-
-    if p.returncode != 0:
-        raise CheckError(
-            "The command exits with a none-zero return code ({})".format(p.returncode)
-        )
-
-    if stderr:
-        raise CheckError(stderr)
-
-    if stdout:
-        stdout = stdout.decode("utf-8")
-        logger.verbose("stdout:\n%s", stdout)
-        return stdout
-    return None
-
-
 # Unit abstraction ############################################################
 
 
