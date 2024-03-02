@@ -282,6 +282,10 @@ def _check_load_state(state: object) -> LoadState | None:
         return state
 
 
+T = TypeVar("T")
+"""For UnitCache. Can not be an inner typevar because of pylance"""
+
+
 class Source:
     class BaseUnit:
         name: str
@@ -425,12 +429,10 @@ class Source:
                 if output:
                     yield output
 
-    T = TypeVar("T")
-
     class Cache(Generic[T]):
         """This class is a container class for systemd units."""
 
-        __units: dict[str, Source.T]
+        __units: dict[str, T]
 
         __name_filter: Source.NameFilter
 
@@ -438,11 +440,11 @@ class Source:
             self.__units = {}
             self.__name_filter = Source.NameFilter()
 
-        def add(self, name: str, unit: Source.T) -> None:
+        def add(self, name: str, unit: T) -> None:
             self.__units[name] = unit
             self.__name_filter.add(name)
 
-        def get(self, name: Optional[str] = None) -> Source.T | None:
+        def get(self, name: Optional[str] = None) -> T | None:
             if name:
                 return self.__units[name]
             return None
@@ -451,7 +453,7 @@ class Source:
             self,
             include: str | Sequence[str] | None = None,
             exclude: str | Sequence[str] | None = None,
-        ) -> Generator[Source.T, None, None]:
+        ) -> Generator[T, None, None]:
             """
             List all units or apply filters (``include`` or ``exclude``) to
             the list of unit.
