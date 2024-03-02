@@ -2,14 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
-import pytest
-from nagiosplugin import CheckError
-
 import check_systemd
-from check_systemd import SystemdUnitTypesList, execute_cli
-from tests.helper import MPopen
+from check_systemd import SystemdUnitTypesList
 
 
 class TestMethodConvertToSec:
@@ -49,19 +43,3 @@ class TestClassSystemdUnitTypesList:
     def test_convert_to_regexp(self) -> None:
         unit_types = SystemdUnitTypesList("service", "timer")
         assert ".*\\.(service|timer)$" == unit_types.convert_to_regexp()
-
-
-class TestFunctionExecuteCli:
-    def test_execute_cli_stdout(self) -> None:
-        with patch("check_systemd.subprocess.Popen") as Popen:
-            Popen.return_value = MPopen(stdout="ok")
-            stdout = execute_cli(["ls"])
-        assert "ok" == stdout
-
-    def test_execute_cli_stderr(self) -> None:
-        with patch("check_systemd.subprocess.Popen") as Popen:
-            Popen.side_effect = (MPopen(stdout="ok"), MPopen(stderr="Not ok"))
-            stdout = execute_cli(["ls"])
-            assert "ok" == stdout
-            with pytest.raises(CheckError):
-                execute_cli(["ls"])
