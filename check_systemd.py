@@ -281,6 +281,152 @@ def _check_load_state(state: object) -> LoadState | None:
 
 
 class DataSource:
+    class UnitNameFilter:
+        """This class stores all system unit names (e. g. ``nginx.service`` or
+        ``fstrim.timer``) and provides a interface to filter the names by regular
+        expressions."""
+
+        __unit_names: set[str]
+
+        def __init__(self, unit_names: Sequence[str] = ()) -> None:
+            self.__unit_names = set(unit_names)
+
+        def add(self, unit_name: str) -> None:
+            """Add one unit name.
+
+            :param unit_name: The name of the unit, for example ``apt.timer``.
+            """
+            self.__unit_names.add(unit_name)
+
+        def get(self) -> set[str]:
+            """Get all stored unit names."""
+            return self.__unit_names
+
+        def filter(
+            self,
+            include: str | Sequence[str] | None = None,
+            exclude: str | Sequence[str] | None = None,
+        ) -> Generator[str, None, None]:
+            """
+            List all unit names or apply filters (``include`` or ``exclude``) to
+            the list of unit names.
+
+            :param include: If the unit name matches the provided regular
+                expression, it is included in the list of unit names. A single
+                regular expression (``include='.*service'``) or a list of regular
+                expressions (``include=('.*service', '.*mount')``).
+
+            :param exclude: If the unit name matches the provided regular
+                expression, it is excluded from the list of unit names. A single
+                regular expression (``exclude='.*service'``) or a list of regular
+                expressions (``exclude=('.*service', '.*mount')``).
+            """
+            for name in self.__unit_names:
+                output: Optional[str] = name
+                if include and not match_multiple(name, include):
+                    output = None
+
+                if output and exclude and match_multiple(name, exclude):
+                    output = None
+
+                if output:
+                    yield output
+
+    class UnitCache:
+        """This class is a container class for systemd units."""
+
+        __units: dict[str, Unit]
+
+        __name_filter: DataSource.UnitNameFilter
+
+        def __init__(self) -> None:
+            self.__units = {}
+            self.__name_filter = DataSource.UnitNameFilter()
+
+        def __add_unit(self, unit: Unit) -> None:
+            self.__units[unit.name] = unit
+            self.__name_filter.add(unit.name)
+
+        def add_unit(
+            self,
+            unit: Optional[Unit] = None,
+            name: Optional[str] = None,
+            active_state: Optional[ActiveState] = None,
+            sub_state: Optional[SubState] = None,
+            load_state: Optional[LoadState] = None,
+        ) -> Unit:
+            if not unit:
+                unit = Unit()
+            if name:
+                unit.name = name
+            if active_state:
+                unit.active_state = active_state
+            if sub_state:
+                unit.sub_state = sub_state
+            if load_state:
+                unit.load_state = load_state
+            self.__add_unit(unit)
+            return unit
+
+        def get(self, name: Optional[str] = None) -> Unit | None:
+            if name:
+                return self.__units[name]
+            return None
+
+        def filter(
+            self,
+            include: str | Sequence[str] | None = None,
+            exclude: str | Sequence[str] | None = None,
+        ) -> Generator[Unit, None, None]:
+            """
+            List all units or apply filters (``include`` or ``exclude``) to
+            the list of unit.
+
+            :param include: If the unit name matches the provided regular
+                expression, it is included in the list of unit names. A single
+                regular expression (``include='.*service'``) or a list of regular
+                expressions (``include=('.*service', '.*mount')``).
+
+            :param exclude: If the unit name matches the provided regular
+                expression, it is excluded from the list of unit names. A single
+                regular expression (``exclude='.*service'``) or a list of regular
+                expressions (``exclude=('.*service', '.*mount')``).
+            """
+            for name in self.__name_filter.filter(include=include, exclude=exclude):
+                yield self.__units[name]
+
+        @property
+        def count(self) -> int:
+            return len(self.__units)
+
+        def count_by_states(
+            self,
+            states: Sequence[str],
+            include: str | Sequence[str] | None = None,
+            exclude: str | Sequence[str] | None = None,
+        ) -> dict[str, int]:
+            states_normalized: list[dict[str, str]] = []
+            counter: dict[str, int] = {}
+            for state_spec in states:
+                # state_proerty:state_value
+                # for example: active_state:failed
+                state_property = state_spec.split(":")[0]
+                state_value = state_spec.split(":")[1]
+                state: dict[str, str] = {
+                    "property": state_property,
+                    "value": state_value,
+                    "spec": state_spec,
+                }
+                states_normalized.append(state)
+                counter[state_spec] = 0
+
+            for unit in self.filter(include=include, exclude=exclude):
+                for state in states_normalized:
+                    if getattr(unit, state["property"]) == state["value"]:
+                        counter[state["spec"]] += 1
+
+            return counter
+
     class Unit:
         """This class bundles all state related informations of a systemd unit in a
         object. This class is inherited by the class ``DbusUnit`` and the

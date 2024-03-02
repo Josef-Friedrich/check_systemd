@@ -4,34 +4,56 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from check_systemd import Unit, UnitCache, UnitNameFilter
+from check_systemd import DataSource
+
+Unit = DataSource.Unit
+UnitCache = DataSource.UnitCache
+UnitNameFilter = DataSource.UnitNameFilter
 
 unit_modem_manager = Unit(
     name="ModemManager.service",
     active_state="active",
-    sub_state="sub",
-    load_state="load",
+    sub_state="running",
+    load_state="loaded",
 )
 unit_mongod = Unit(
-    name="mongod.service", active_state="failed", sub_state="sub", load_state="load"
+    name="mongod.service",
+    active_state="failed",
+    sub_state="running",
+    load_state="loaded",
 )
 unit_mysql = Unit(
-    name="mysql.service", active_state="active", sub_state="sub", load_state="load"
+    name="mysql.service",
+    active_state="active",
+    sub_state="running",
+    load_state="loaded",
 )
 unit_named = Unit(
-    name="named.service", active_state="active", sub_state="sub", load_state="load"
+    name="named.service",
+    active_state="active",
+    sub_state="running",
+    load_state="loaded",
 )
 unit_networking = Unit(
-    name="networking.mount", active_state="active", sub_state="sub", load_state="load"
+    name="networking.mount",
+    active_state="active",
+    sub_state="mounting-done",
+    load_state="loaded",
 )
 unit_nginx = Unit(
-    name="nginx.service", active_state="active", sub_state="sub", load_state="load"
+    name="nginx.service",
+    active_state="active",
+    sub_state="running",
+    load_state="loaded",
 )
 unit_nmdb = Unit(
-    name="nmbd.timer", active_state="active", sub_state="sub", load_state="load"
+    name="nmbd.timer", active_state="active", sub_state="running", load_state="loaded"
 )
 unit_php = Unit(
-    name="php7.4-fpm.service", active_state="active", sub_state="sub", load_state="load"
+    name="php7.4-fpm.service",
+    active_state="active",
+    sub_state="running",
+    load_state="loaded",
 )
 
 
@@ -40,13 +62,13 @@ class TestClassUnit:
         unit = Unit(
             name="test.service",
             active_state="active",
-            sub_state="sub",
-            load_state="load",
+            sub_state="running",
+            load_state="loaded",
         )
         assert "test.service" == unit.name
         assert "active" == unit.active_state
-        assert "sub" == unit.sub_state
-        assert "load" == unit.load_state
+        assert "running" == unit.sub_state
+        assert "loaded" == unit.load_state
         assert "active" == unit.active_state
 
 
@@ -65,13 +87,13 @@ class TestClassUnitCache:
         self.unit_cache.add_unit(unit_nmdb)
         self.unit_cache.add_unit(unit_php)
 
-    def list(
+    def filter(
         self,
         include: str | Sequence[str] | None = None,
         exclude: str | Sequence[str] | None = None,
     ) -> list[str]:
         units: list[str] = []
-        for unit in self.unit_cache.list(include=include, exclude=exclude):
+        for unit in self.unit_cache.filter(include=include, exclude=exclude):
             units.append(unit.name)
         return units
 
@@ -92,32 +114,32 @@ class TestClassUnitCache:
         assert "ModemManager.service" == unit.name
 
     def test_method_list(self) -> None:
-        units = self.list()
+        units = self.filter()
         assert 8 == len(units)
 
     def test_method_list_include(self) -> None:
-        units = self.list(include="XXX")
+        units = self.filter(include="XXX")
         assert 0 == len(units)
 
-        units = self.list(include="named.service")
+        units = self.filter(include="named.service")
         assert 1 == len(units)
 
-        units = self.list(include="n.*")
+        units = self.filter(include="n.*")
         assert 4 == len(units)
 
     def test_method_list_include_multiple(self) -> None:
-        units = self.list(include=("n.*", "p.*"))
+        units = self.filter(include=("n.*", "p.*"))
         assert 5 == len(units)
 
     def test_method_list_exclude(self) -> None:
-        units = self.list(exclude="named.service")
+        units = self.filter(exclude="named.service")
         assert 7 == len(units)
 
-        units = self.list(exclude=r".*\.(mount|timer)")
+        units = self.filter(exclude=r".*\.(mount|timer)")
         assert 6 == len(units)
 
     def test_method_list_exclude_multiple(self) -> None:
-        units = self.list(exclude=("named.service", "nmbd.timer"))
+        units = self.filter(exclude=("named.service", "nmbd.timer"))
         assert 6 == len(units)
 
     def test_method_count_by_states(self) -> None:
@@ -146,7 +168,7 @@ class TestClassUnitNameFilter:
         exclude: str | Sequence[str] | None = None,
     ):
         unit_names: list[str] = []
-        for unit_name in self.filter.list(include=include, exclude=exclude):
+        for unit_name in self.filter.filter(include=include, exclude=exclude):
             unit_names.append(unit_name)
         return unit_names
 
