@@ -803,7 +803,7 @@ class CliSource(Source):
             # Output when boot process is not finished:
             # Bootup is not yet finished. Please try again later.
             if match:
-                return format_timespan_to_seconds(match.group(1))
+                return CliSource.__convert_to_sec(match.group(1))
 
     def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
         stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
@@ -1099,47 +1099,6 @@ The systemd D-Bus API main entry point object, the so called “manager”.
 """
 if is_gi:
     dbus_manager = DbusManager()
-
-
-# Data source: CLI (command line interface) ###################################
-
-
-def format_timespan_to_seconds(fmt_timespan: str) -> float:
-    """Convert a timespan format string into secondes. Take a look at the
-    systemd `time-util.c
-    <https://github.com/systemd/systemd/blob/master/src/basic/time-util.c>`_
-    source code.
-
-    :param fmt_timespan: for example ``2.345s`` or ``3min 45.234s`` or
-      ``34min left`` or ``2 months 8 days``
-
-    :return: The seconds
-    """
-    for replacement in [
-        ["years", "y"],
-        ["months", "month"],
-        ["weeks", "w"],
-        ["days", "d"],
-    ]:
-        fmt_timespan = fmt_timespan.replace(" " + replacement[0], replacement[1])
-    seconds = {
-        "y": 31536000,  # 365 * 24 * 60 * 60
-        "month": 2592000,  # 30 * 24 * 60 * 60
-        "w": 604800,  # 7 * 24 * 60 * 60
-        "d": 86400,  # 24 * 60 * 60
-        "h": 3600,  # 60 * 60
-        "min": 60,
-        "s": 1,
-        "ms": 0.001,
-    }
-    result = 0
-    for span in fmt_timespan.split():
-        match = re.search(r"([\d\.]+)([a-z]+)", span)
-        if match:
-            value = match.group(1)
-            unit = match.group(2)
-            result += float(value) * seconds[unit]
-    return round(float(result), 3)
 
 
 # Unit abstraction ############################################################
