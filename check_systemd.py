@@ -1685,7 +1685,7 @@ class UnitsResource(Resource):
 
 class UnitsContext(Context):
     def __init__(self) -> None:
-        super(UnitsContext, self).__init__("units")
+        super().__init__("units")
 
     def evaluate(self, metric: Metric, resource: Resource) -> Result:
         """Determines state of a given metric.
@@ -1738,7 +1738,6 @@ class TimersResource(Resource):
     name = "SYSTEMD"
 
     def __init__(self, source: Source) -> None:
-        super().__init__()
         self.source = source
 
     def probe(self) -> Generator[Metric, None, None]:
@@ -1761,7 +1760,7 @@ class TimersResource(Resource):
 
 class TimersContext(Context):
     def __init__(self) -> None:
-        super(TimersContext, self).__init__("timers")
+        super().__init__("timers")
 
     def evaluate(self, metric: Metric, resource: Resource):
         """Determines state of a given metric.
@@ -1788,7 +1787,6 @@ class StartupTimeResource(Resource):
     __source: Source
 
     def __init__(self, source: Source) -> None:
-        super(StartupTimeResource, self).__init__()
         self.__source = source
 
     def probe(self) -> Generator[Metric, None, None]:
@@ -1849,7 +1847,7 @@ class PerformanceDataResource(Resource):
 
 class PerformanceDataContext(Context):
     def __init__(self) -> None:
-        super(PerformanceDataContext, self).__init__("performance_data")
+        super().__init__("performance_data")
 
     def performance(self, metric: Metric, resource: Resource):
         """Derives performance data from a given metric.
