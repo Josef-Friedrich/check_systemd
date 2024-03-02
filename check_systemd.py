@@ -61,7 +61,16 @@ import collections.abc
 import logging
 import re
 import subprocess
-from typing import Generator, Literal, Optional, Sequence, Union, cast, get_args
+from typing import (
+    Generator,
+    Literal,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+    get_args,
+)
 
 try:
     import nagiosplugin
@@ -81,6 +90,563 @@ except ImportError:
 
 
 __version__: str = "4.1.0"
+
+ActiveState = Literal[
+    "active", "reloading", "inactive", "failed", "activating", "deactivating"
+]
+"""From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``ActiveState`` contains a state value that reflects whether the unit
+is currently active or not. The following states are currently defined:
+
+* ``active``,
+* ``reloading``,
+* ``inactive``,
+* ``failed``,
+* ``activating``, and
+* ``deactivating``.
+
+``active`` indicates that unit is active (obviously...).
+
+``reloading`` indicates that the unit is active and currently reloading
+its configuration.
+
+``inactive`` indicates that it is inactive and the previous run was
+successful or no previous run has taken place yet.
+
+``failed`` indicates that it is inactive and the previous run was not
+successful (more information about the reason for this is available on
+the unit type specific interfaces, for example for services in the
+Result property, see below).
+
+``activating`` indicates that the unit has previously been inactive but
+is currently in the process of entering an active state.
+
+Conversely ``deactivating`` indicates that the unit is currently in the
+process of deactivation.
+"""
+
+
+def _check_active_state(state: object) -> ActiveState | None:
+    states: tuple[ActiveState] = get_args(ActiveState)
+    if state in states:
+        return state
+
+
+SubState = Literal[
+    "abandoned",
+    "activating-done",
+    "activating",
+    "active",
+    "auto-restart",
+    "cleaning",
+    "condition",
+    "deactivating-sigkill",
+    "deactivating-sigterm",
+    "deactivating",
+    "dead",
+    "elapsed",
+    "exited",
+    "failed",
+    "final-sigkill",
+    "final-sigterm",
+    "final-watchdog",
+    "listening",
+    "mounted",
+    "mounting-done",
+    "mounting",
+    "plugged",
+    "reload",
+    "remounting-sigkill",
+    "remounting-sigterm",
+    "remounting",
+    "running",
+    "start-chown",
+    "start-post",
+    "start-pre",
+    "start",
+    "stop-post",
+    "stop-pre-sigkill",
+    "stop-pre-sigterm",
+    "stop-pre",
+    "stop-sigkill",
+    "stop-sigterm",
+    "stop-watchdog",
+    "stop",
+    "tentative",
+    "unmounting-sigkill",
+    "unmounting-sigterm",
+    "unmounting",
+    "waiting",
+]
+"""From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``SubState`` encodes states of the same state machine that
+``ActiveState`` covers, but knows more fine-grained states that are
+unit-type-specific. Where ``ActiveState`` only covers six high-level
+states, ``SubState`` covers possibly many more low-level
+unit-type-specific states that are mapped to the six high-level states.
+Note that multiple low-level states might map to the same high-level
+state, but not vice versa. Not all high-level states have low-level
+counterparts on all unit types.
+
+All sub states are listed in the file `basic/unit-def.c
+<https://github.com/systemd/systemd/blob/main/src/basic/unit-def.c>`_
+of the systemd source code:
+
+* automount: ``dead``, ``waiting``, ``running``, ``failed``
+* device: ``dead``, ``tentative``, ``plugged``
+* mount: ``dead``, ``mounting``, ``mounting-done``, ``mounted``,
+    ``remounting``, ``unmounting``, ``remounting-sigterm``,
+    ``remounting-sigkill``, ``unmounting-sigterm``,
+    ``unmounting-sigkill``, ``failed``, ``cleaning``
+* path: ``dead``, ``waiting``, ``running``, ``failed``
+* scope: ``dead``, ``running``, ``abandoned``, ``stop-sigterm``,
+    ``stop-sigkill``, ``failed``
+* service: ``dead``, ``condition``, ``start-pre``, ``start``,
+    ``start-post``, ``running``, ``exited``, ``reload``, ``stop``,
+    ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``,
+    ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``,
+    ``auto-restart``, ``cleaning``
+* slice: ``dead``, ``active``
+* socket: ``dead``, ``start-pre``, ``start-chown``, ``start-post``,
+    ``listening``, ``running``, ``stop-pre``, ``stop-pre-sigterm``,
+    ``stop-pre-sigkill``, ``stop-post``, ``final-sigterm``,
+    ``final-sigkill``, ``failed``, ``cleaning``
+* swap: ``dead``, ``activating``, ``activating-done``, ``active``,
+    ``deactivating``, ``deactivating-sigterm``, ``deactivating-sigkill``,
+    ``failed``, ``cleaning``
+* target:``dead``, ``active``
+* timer: ``dead``, ``waiting``, ``running``, ``elapsed``, ``failed``
+"""
+
+
+def _check_sub_state(state: object) -> SubState | None:
+    states: tuple[SubState] = get_args(SubState)
+    if state in states:
+        return state
+
+
+LoadState = Literal[
+    "stub", "loaded", "not-found", "bad-setting", "error", "merged", "masked"
+]
+"""
+`src/basic/unit-def.c#L95-L103 <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/basic/unit-def.c#L95-L103>`_
+
+From the `D-Bus interface of systemd documentation
+<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
+
+``LoadState`` contains a state value that reflects whether the
+configuration file of this unit has been loaded. The following states
+are currently defined:
+
+* ``loaded``,
+* ``error`` and
+* ``masked``.
+
+``loaded`` indicates that the configuration was successfully loaded.
+
+``error`` indicates that the configuration failed to load, the
+``LoadError`` field contains information about the cause of this
+failure.
+
+``masked`` indicates that the unit is currently masked out (i.e.
+symlinked to /dev/null or suchlike).
+
+Note that the ``LoadState`` is fully orthogonal to the ``ActiveState``
+(see below) as units without valid loaded configuration might be active
+(because configuration might have been reloaded at a time where a unit
+was already active).
+"""
+
+
+def _check_load_state(state: object) -> LoadState | None:
+    states: tuple[LoadState] = get_args(LoadState)
+    if state in states:
+        return state
+
+
+class DataSource:
+    class Unit:
+        """This class bundles all state related informations of a systemd unit in a
+        object. This class is inherited by the class ``DbusUnit`` and the
+        attributes are overwritten by properties.
+        """
+
+        name: str
+        """The name of the system unit, for example ``nginx.service``. In the
+        command line table of the command ``systemctl list-units`` is the
+        column containing unit names titled with “UNIT”.
+        """
+
+        active_state: ActiveState
+
+        sub_state: SubState
+
+        load_state: LoadState
+
+        def __check_active_state(self, state: object) -> ActiveState:
+            states: tuple[ActiveState] = get_args(ActiveState)
+            if state in states:
+                return state
+            raise ValueError(f"Invalid active state: {state}")
+
+        def __check_sub_state(self, state: object) -> SubState:
+            states: tuple[SubState] = get_args(SubState)
+            if state in states:
+                return state
+            raise ValueError(f"Invalid sub state: {state}")
+
+        def __check_load_state(self, state: object) -> LoadState:
+            states: tuple[LoadState] = get_args(LoadState)
+            if state in states:
+                return state
+            raise ValueError(f"Invalid load state: {state}")
+
+        def __init__(
+            self,
+            name: str,
+            active_state: Optional[object],
+            sub_state: Optional[object],
+            load_state: Optional[object],
+        ) -> None:
+            self.name = name
+            self.active_state = self.__check_active_state(active_state)
+            self.sub_state = self.__check_sub_state(sub_state)
+            self.load_state = self.__check_load_state(load_state)
+
+        def convert_to_exitcode(self) -> ServiceState:
+            """Convert the different systemd states into a Nagios compatible
+            exit code.
+
+            :return: A Nagios compatible exit code: 0, 1, 2, 3
+            """
+            if opts.expected_state and opts.expected_state.lower() != self.active_state:
+                return Critical
+            if self.load_state == "error" or self.active_state == "failed":
+                return Critical
+            return Ok
+
+    def get_all_units(self, user: bool) -> Generator[DataSource.Unit, None, None]:
+        ...
+
+
+class DbusSource(DataSource):
+    """
+    This class holds the main entry point object of the D-Bus systemd API. See
+    the section `The Manager Object
+    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#The%20Manager%20Object>`_
+    in the systemd D-Bus API.
+    """
+
+    class UnitTuple(NamedTuple):
+        name: str
+        """The primary unit name as string"""
+
+        description: str
+        """The human readable description string"""
+
+        load_state: LoadState
+        """The load state (i.e. whether the unit file has been loaded successfully)"""
+
+        active_state: ActiveState
+        """The active state (i.e. whether the unit is currently started or not)"""
+
+        sub_state: SubState
+        """The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)"""
+
+        followed_by: str
+        """A unit that is being followed in its state by this unit, if there is any, otherwise the empty string."""
+
+        unit_object_path: str
+        """The unit object path"""
+
+        job_id: str
+        """If there is a job queued for the job unit, the numeric job id, 0 otherwise"""
+
+        job_type: str
+        """The job type as string"""
+
+        job_object_path: str
+        """The job object path"""
+
+    class DbusApi:
+        def ListUnits(self) -> list[DbusSource.UnitTuple]:
+            ...
+
+        """ListUnits() returns an array of all currently loaded units.
+        Note that units may be known by multiple names at the same name, and hence
+        there might be more unit names loaded than actual units behind them.
+        The array consists of structures with the following elements:"""
+
+    def __get_manager(self, user: bool = False) -> DbusSource.DbusApi:
+        """List all units."""
+        if not DBusProxy or not BusType or not DBusProxyFlags:
+            raise Exception("The package PyGObject (gi) is not available.")
+
+        bus_type = BusType.SESSION if user else BusType.SYSTEM
+
+        return cast(
+            DbusSource.DbusApi,
+            DBusProxy.new_for_bus_sync(
+                bus_type,
+                DBusProxyFlags.NONE,
+                None,
+                "org.freedesktop.systemd1",
+                "/org/freedesktop/systemd1",
+                "org.freedesktop.systemd1.Manager",
+                None,
+            ),
+        )
+
+    def get_all_units(
+        self, user: bool = False
+    ) -> Generator[DataSource.Unit, None, None]:
+        for (
+            name,
+            _,
+            load_state,
+            active_state,
+            sub_state,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) in self.__get_manager(user).ListUnits():
+            yield self.Unit(
+                name=name,
+                active_state=active_state,
+                sub_state=sub_state,
+                load_state=load_state,
+            )
+
+
+class CliSource(DataSource):
+    class Table:
+        """This class reads the text tables that some systemd commands like
+        ``systemctl list-units`` or ``systemctl list-timers`` produce."""
+
+        header_row: str
+        body_rows: list[str]
+        column_lengths: list[int]
+        columns: list[str]
+
+        def __init__(self, stdout: str) -> None:
+            """
+            :param stdout: The standard output of certain systemd command line
+            utilities.
+            :param expected_column_headers: The expected column headers
+            (for example ``('UNIT', 'LOAD', 'ACTIVE')``)
+            """
+            rows: list[str] = stdout.splitlines()
+            self.header_row = CliSource.Table.__normalize_header(rows[0])
+            self.column_lengths = CliSource.Table.__detect_lengths(self.header_row)
+            self.columns = CliSource.Table.__split_row(
+                self.header_row, self.column_lengths
+            )
+            counter = 0
+            for line in rows:
+                # The table footer is separted by a blank line
+                if line == "":
+                    break
+                counter += 1
+            self.body_rows = rows[1:counter]
+
+        @staticmethod
+        def __normalize_header(header_row: str) -> str:
+            """Normalize the header row
+
+            :param header_row: The first line of a systemd table output.
+            """
+            return header_row.lower()
+
+        @staticmethod
+        def __detect_lengths(header_row: str) -> list[int]:
+            """
+            :param header_row: The first line of a systemd table output.
+
+            :return: A list of column lengths in number of characters.
+            """
+            column_lengths: list[int] = []
+            match = re.search(r"^ +", header_row)
+            if match:
+                whitespace_prefix_length = match.end()
+                column_lengths.append(whitespace_prefix_length)
+                header_row = header_row[whitespace_prefix_length:]
+
+            word = 0
+            space = 0
+
+            for char in header_row:
+                if word and space >= 1 and char != " ":
+                    column_lengths.append(word + space)
+                    word = 0
+                    space = 0
+
+                if char == " ":
+                    space += 1
+                else:
+                    word += 1
+
+            return column_lengths
+
+        @staticmethod
+        def __split_row(line: str, column_lengths: list[int]) -> list[str]:
+            columns: list[str] = []
+            right = 0
+            for length in column_lengths:
+                left = right
+                right = right + length
+                columns.append(line[left:right].strip())
+            columns.append(line[right:].strip())
+            return columns
+
+        @property
+        def row_count(self) -> int:
+            """The number of rows. Only the body rows are counted. The header row
+            is not taken into account."""
+            return len(self.body_rows)
+
+        def check_header(self, column_header: Sequence[str]) -> None:
+            """Check if the specified column names are present in the header row of
+            the text table. Raise an exception if not.
+
+            :param column_headers: The expected column headers
+              (for example ``('UNIT', 'LOAD', 'ACTIVE')``)
+            """
+            for column_name in column_header:
+                if self.header_row.find(column_name.lower()) == -1:
+                    msg = (
+                        "The column heading '{}' couldn’t found in the "
+                        "table header. Possibly the table layout of systemctl "
+                        "has changed."
+                    )
+                    raise ValueError(msg.format(column_name))
+
+        def get_row(self, row_number: int) -> dict[str, str]:
+            """Retrieve a table row as a dictionary. The keys are taken from the
+            header row. The first row number is 0.
+
+            :param row_number: The index number of the table row starting at 0.
+
+            """
+            body_columns = CliSource.Table.__split_row(
+                self.body_rows[row_number], self.column_lengths
+            )
+
+            result: dict[str, str] = {}
+
+            index = 0
+            for column in self.columns:
+                if column == "":
+                    key = "column_{}".format(index)
+                else:
+                    key = column
+                result[key] = body_columns[index]
+                index += 1
+            return result
+
+        def list_rows(self) -> Generator[dict[str, str], None, None]:
+            """List all rows."""
+            for i in range(0, self.row_count):
+                yield self.get_row(i)
+
+    @staticmethod
+    def __execute_cli(args: str | Sequence[str]) -> str | None:
+        """Execute a command on the command line (cli = command line interface))
+        and capture the stdout. This is a wrapper around ``subprocess.Popen``.
+
+        :param args: A list of programm arguments.
+
+        :raises nagiosplugin.CheckError: If the command produces some stderr output
+        or if an OSError exception occurs.
+
+        :return: The stdout of the command.
+        """
+        try:
+            p = subprocess.Popen(
+                args,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+            stdout, stderr = p.communicate()
+            logger.debug("Execute command on the command line: %s", " ".join(args))
+        except OSError as e:
+            raise CheckError(e)
+
+        if p.returncode != 0:
+            raise CheckError(
+                "The command exits with a none-zero return code ({})".format(
+                    p.returncode
+                )
+            )
+
+        if stderr:
+            raise CheckError(stderr)
+
+        if stdout:
+            stdout = stdout.decode("utf-8")
+            logger.verbose("stdout:\n%s", stdout)
+            return stdout
+        return None
+
+    def get_unit(self, name: str) -> Unit:
+        properties = _collect_properties(name)
+
+        stdout = CliSource.__execute_cli(
+            [
+                "systemctl",
+                "show",
+                "--property",
+                "Id",
+                "--property",
+                "ActiveState",
+                "--property",
+                "SubState",
+                "--property",
+                "LoadState",
+                name,
+            ]
+        )
+        if stdout is None:
+            raise CheckSystemdError(f"The unit '{name}' couldn't be found.")
+        rows = stdout.splitlines()
+
+        properties: dict[str, str] = {}
+        for row in rows:
+            index_equal_sign = row.index("=")
+            properties[row[:index_equal_sign]] = row[index_equal_sign + 1 :]
+
+        logger.debug("Properties of unit '%s': %s", name, properties)
+
+        return Unit(
+            name=properties["Id"],
+            active_state=_check_active_state(properties["ActiveState"]),
+            sub_state=_check_sub_state(properties["SubState"]),
+            load_state=_check_load_state(properties["LoadState"]),
+        )
+
+    def get_all_units(
+        self, user: bool = False
+    ) -> Generator[DataSource.Unit, None, None]:
+        command = ["systemctl", "list-units", "--all"]
+        if user:
+            command += ["--user"]
+        stdout = CliSource.__execute_cli(command)
+        if stdout:
+            table_parser = self.Table(stdout)
+            table_parser.check_header(("unit", "active", "sub", "load"))
+            for row in table_parser.list_rows():
+                yield self.Unit(
+                    name=row["unit"],
+                    active_state=row["active"],
+                    sub_state=row["sub"],
+                    load_state=row["load"],
+                )
 
 
 class Logger:
@@ -512,178 +1078,6 @@ def match_multiple(unit_name: str, regexes: str | Sequence[str]) -> bool:
                 "Invalid regular expression: '{}'".format(regex)
             )
     return False
-
-
-ActiveState = Literal[
-    "active", "reloading", "inactive", "failed", "activating", "deactivating"
-]
-"""From the `D-Bus interface of systemd documentation
-<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
-
-``ActiveState`` contains a state value that reflects whether the unit
-is currently active or not. The following states are currently defined:
-
-* ``active``,
-* ``reloading``,
-* ``inactive``,
-* ``failed``,
-* ``activating``, and
-* ``deactivating``.
-
-``active`` indicates that unit is active (obviously...).
-
-``reloading`` indicates that the unit is active and currently reloading
-its configuration.
-
-``inactive`` indicates that it is inactive and the previous run was
-successful or no previous run has taken place yet.
-
-``failed`` indicates that it is inactive and the previous run was not
-successful (more information about the reason for this is available on
-the unit type specific interfaces, for example for services in the
-Result property, see below).
-
-``activating`` indicates that the unit has previously been inactive but
-is currently in the process of entering an active state.
-
-Conversely ``deactivating`` indicates that the unit is currently in the
-process of deactivation.
-"""
-
-
-def _check_active_state(state: object) -> ActiveState | None:
-    states: tuple[ActiveState] = get_args(ActiveState)
-    if state in states:
-        return state
-
-
-SubState = Literal[
-    "abandoned",
-    "activating-done",
-    "activating",
-    "active",
-    "auto-restart",
-    "cleaning",
-    "condition",
-    "deactivating-sigkill",
-    "deactivating-sigterm",
-    "deactivating",
-    "dead",
-    "elapsed",
-    "exited",
-    "failed",
-    "final-sigkill",
-    "final-sigterm",
-    "final-watchdog",
-    "listening",
-    "mounted",
-    "mounting-done",
-    "mounting",
-    "plugged",
-    "reload",
-    "remounting-sigkill",
-    "remounting-sigterm",
-    "remounting",
-    "running",
-    "start-chown",
-    "start-post",
-    "start-pre",
-    "start",
-    "stop-post",
-    "stop-pre-sigkill",
-    "stop-pre-sigterm",
-    "stop-pre",
-    "stop-sigkill",
-    "stop-sigterm",
-    "stop-watchdog",
-    "stop",
-    "tentative",
-    "unmounting-sigkill",
-    "unmounting-sigterm",
-    "unmounting",
-    "waiting",
-]
-"""From the `D-Bus interface of systemd documentation
-<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
-
-``SubState`` encodes states of the same state machine that
-``ActiveState`` covers, but knows more fine-grained states that are
-unit-type-specific. Where ``ActiveState`` only covers six high-level
-states, ``SubState`` covers possibly many more low-level
-unit-type-specific states that are mapped to the six high-level states.
-Note that multiple low-level states might map to the same high-level
-state, but not vice versa. Not all high-level states have low-level
-counterparts on all unit types.
-
-All sub states are listed in the file `basic/unit-def.c
-<https://github.com/systemd/systemd/blob/main/src/basic/unit-def.c>`_
-of the systemd source code:
-
-* automount: ``dead``, ``waiting``, ``running``, ``failed``
-* device: ``dead``, ``tentative``, ``plugged``
-* mount: ``dead``, ``mounting``, ``mounting-done``, ``mounted``,
-    ``remounting``, ``unmounting``, ``remounting-sigterm``,
-    ``remounting-sigkill``, ``unmounting-sigterm``,
-    ``unmounting-sigkill``, ``failed``, ``cleaning``
-* path: ``dead``, ``waiting``, ``running``, ``failed``
-* scope: ``dead``, ``running``, ``abandoned``, ``stop-sigterm``,
-    ``stop-sigkill``, ``failed``
-* service: ``dead``, ``condition``, ``start-pre``, ``start``,
-    ``start-post``, ``running``, ``exited``, ``reload``, ``stop``,
-    ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``,
-    ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``,
-    ``auto-restart``, ``cleaning``
-* slice: ``dead``, ``active``
-* socket: ``dead``, ``start-pre``, ``start-chown``, ``start-post``,
-    ``listening``, ``running``, ``stop-pre``, ``stop-pre-sigterm``,
-    ``stop-pre-sigkill``, ``stop-post``, ``final-sigterm``,
-    ``final-sigkill``, ``failed``, ``cleaning``
-* swap: ``dead``, ``activating``, ``activating-done``, ``active``,
-    ``deactivating``, ``deactivating-sigterm``, ``deactivating-sigkill``,
-    ``failed``, ``cleaning``
-* target:``dead``, ``active``
-* timer: ``dead``, ``waiting``, ``running``, ``elapsed``, ``failed``
-"""
-
-
-def _check_sub_state(state: object) -> SubState | None:
-    states: tuple[SubState] = get_args(SubState)
-    if state in states:
-        return state
-
-
-LoadState = Literal["loaded", "error", "masked"]
-"""From the `D-Bus interface of systemd documentation
-<https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#Properties1>`_:
-
-``LoadState`` contains a state value that reflects whether the
-configuration file of this unit has been loaded. The following states
-are currently defined:
-
-* ``loaded``,
-* ``error`` and
-* ``masked``.
-
-``loaded`` indicates that the configuration was successfully loaded.
-
-``error`` indicates that the configuration failed to load, the
-``LoadError`` field contains information about the cause of this
-failure.
-
-``masked`` indicates that the unit is currently masked out (i.e.
-symlinked to /dev/null or suchlike).
-
-Note that the ``LoadState`` is fully orthogonal to the ``ActiveState``
-(see below) as units without valid loaded configuration might be active
-(because configuration might have been reloaded at a time where a unit
-was already active).
-"""
-
-
-def _check_load_state(state: object) -> LoadState | None:
-    states: tuple[LoadState] = get_args(LoadState)
-    if state in states:
-        return state
 
 
 class Unit:

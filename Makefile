@@ -1,6 +1,9 @@
 test:
 	poetry run tox
 
+test_unmocked:
+	pytest tests/_test_unmocked.py
+
 install: update
 
 # https://github.com/python-poetry/poetry/issues/34#issuecomment-1054626460
