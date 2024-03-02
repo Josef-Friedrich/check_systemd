@@ -1704,48 +1704,30 @@ class TimersResource(Resource):
       checks.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    source: Source
 
     name = "SYSTEMD"
 
+    def __init__(self, source: Source) -> None:
+        super().__init__()
+        self.source = source
+
     def probe(self) -> Generator[Metric, None, None]:
-        """
-        :return: generator that emits
-          :class:`~nagiosplugin.metric.Metric` objects
-        """
-        stdout = execute_cli(["systemctl", "list-timers", "--all"])
+        for timer in self.source.get_all_timers():
+            if match_multiple(timer.name, opts.exclude):
+                continue
 
-        # NEXT                          LEFT
-        # Sat 2020-05-16 15:11:15 CEST  34min left
-
-        # LAST                          PASSED
-        # Sat 2020-05-16 14:31:56 CEST  4min 20s ago
-
-        # UNIT             ACTIVATES
-        # apt-daily.timer  apt-daily.service
-        if stdout:
-            table_parser = TableParser(stdout)
-            table_parser.check_header(("unit", "next", "passed"))
             state = Ok
+            if timer.next is None:
+                if timer.passed is None:
+                    state = Critical
 
-            for row in table_parser.list_rows():
-                unit = row["unit"]
-                if match_multiple(unit, opts.exclude):
-                    continue
+                elif timer.passed >= opts.timers_critical:
+                    state = Critical
+                elif timer.passed >= opts.timers_warning:
+                    state = Warn
 
-                if row["next"] == "n/a":
-                    if row["passed"] == "n/a":
-                        state = Critical
-                    else:
-                        passed = format_timespan_to_seconds(row["passed"])
-
-                        if row["passed"] == "n/a" or passed >= opts.timers_critical:
-                            state = Critical
-                        elif passed >= opts.timers_warning:
-                            state = Warn
-
-                yield Metric(name=unit, value=state, context="timers")
+            yield Metric(name=timer.name, value=state, context="timers")
 
 
 class TimersContext(Context):
@@ -2275,7 +2257,7 @@ def main() -> None:
 
     if opts.scope_timers:
         tasks += [
-            TimersResource(),
+            TimersResource(source),
             TimersContext(),
         ]
 
