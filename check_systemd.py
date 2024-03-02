@@ -64,11 +64,13 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Generator,
+    Generic,
     Literal,
     MutableSequence,
     NamedTuple,
     Optional,
     Sequence,
+    TypeVar,
     Union,
     cast,
     get_args,
@@ -281,16 +283,17 @@ def _check_load_state(state: object) -> LoadState | None:
 
 
 class Source:
-    class Unit:
-        """This class bundles all state related informations of a systemd unit in a
-        object. This class is inherited by the class ``DbusUnit`` and the
-        attributes are overwritten by properties.
-        """
-
+    class BaseUnit:
         name: str
         """The name of the system unit, for example ``nginx.service``. In the
         command line table of the command ``systemctl list-units`` is the
         column containing unit names titled with “UNIT”.
+        """
+
+    class Unit(BaseUnit):
+        """This class bundles all state related informations of a systemd unit in a
+        object. This class is inherited by the class ``DbusUnit`` and the
+        attributes are overwritten by properties.
         """
 
         active_state: ActiveState
@@ -342,7 +345,7 @@ class Source:
             return Ok
 
     @dataclass
-    class Timer:
+    class Timer(BaseUnit):
         name: str
         next: Optional[float]
         passed: Optional[float]
@@ -422,10 +425,12 @@ class Source:
                 if output:
                     yield output
 
-    class UnitCache:
+    T = TypeVar("T")
+
+    class Cache(Generic[T]):
         """This class is a container class for systemd units."""
 
-        __units: dict[str, Source.Unit]
+        __units: dict[str, Source.T]
 
         __name_filter: Source.NameFilter
 
@@ -433,11 +438,11 @@ class Source:
             self.__units = {}
             self.__name_filter = Source.NameFilter()
 
-        def add(self, unit: Source.Unit) -> None:
-            self.__units[unit.name] = unit
-            self.__name_filter.add(unit.name)
+        def add(self, name: str, unit: Source.T) -> None:
+            self.__units[name] = unit
+            self.__name_filter.add(name)
 
-        def get(self, name: Optional[str] = None) -> Source.Unit | None:
+        def get(self, name: Optional[str] = None) -> Source.T | None:
             if name:
                 return self.__units[name]
             return None
@@ -446,7 +451,7 @@ class Source:
             self,
             include: str | Sequence[str] | None = None,
             exclude: str | Sequence[str] | None = None,
-        ) -> Generator[Source.Unit, None, None]:
+        ) -> Generator[Source.T, None, None]:
             """
             List all units or apply filters (``include`` or ``exclude``) to
             the list of unit.
@@ -499,10 +504,10 @@ class Source:
     def get_all_units(self, user: bool = False) -> Generator[Source.Unit, Any, None]:
         ...
 
-    def get_all_units_cached(self, user: bool = False) -> Source.UnitCache:
-        cache = Source.UnitCache()
+    def get_all_units_cached(self, user: bool = False) -> Source.Cache[Source.Unit]:
+        cache: Source.Cache[Source.Unit] = Source.Cache()
         for unit in self.get_all_units(user):
-            cache.add(unit)
+            cache.add(unit.name, unit)
         return cache
 
     def get_startup_time(self) -> float | None:

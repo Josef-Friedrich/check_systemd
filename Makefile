@@ -1,4 +1,4 @@
-test: test_unmocked
+test:
 	poetry run tox
 
 test_unmocked:

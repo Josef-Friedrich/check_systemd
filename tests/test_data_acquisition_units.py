@@ -7,8 +7,8 @@ from typing import Sequence
 from check_systemd import Source
 
 Unit = Source.Unit
-UnitCache = Source.UnitCache
-UnitNameFilter = Source.NameFilter
+Cache = Source.Cache
+NameFilter = Source.NameFilter
 
 unit_modem_manager = Unit(
     name="ModemManager.service",
@@ -73,19 +73,19 @@ class TestClassUnit:
 
 
 class TestClassUnitCache:
-    unit_cache: UnitCache
+    unit_cache: Source.Cache[Unit]
 
     def setup_method(self) -> None:
-        self.unit_cache = UnitCache()
-        self.unit_cache.add(unit_modem_manager)
-        self.unit_cache.add(unit_mongod)
-        self.unit_cache.add(unit_mysql)
-        self.unit_cache.add(unit_named)
-        self.unit_cache.add(unit_networking)
-        self.unit_cache.add(unit_nginx)
-        self.unit_cache.add(unit_modem_manager)
-        self.unit_cache.add(unit_nmdb)
-        self.unit_cache.add(unit_php)
+        self.unit_cache = Source.Cache[Unit]()
+        self.unit_cache.add(unit_modem_manager.name, unit_modem_manager)
+        self.unit_cache.add(unit_mongod.name, unit_mongod)
+        self.unit_cache.add(unit_mysql.name, unit_mysql)
+        self.unit_cache.add(unit_named.name, unit_named)
+        self.unit_cache.add(unit_networking.name, unit_networking)
+        self.unit_cache.add(unit_nginx.name, unit_nginx)
+        self.unit_cache.add(unit_modem_manager.name, unit_modem_manager)
+        self.unit_cache.add(unit_nmdb.name, unit_nmdb)
+        self.unit_cache.add(unit_php.name, unit_php)
 
     def filter(
         self,
@@ -141,7 +141,7 @@ class TestClassUnitCache:
 
 class TestClassUnitNameFilter:
     def setup_method(self) -> None:
-        self.filter = UnitNameFilter()
+        self.filter = NameFilter()
         self.filter.add("ModemManager.service")
         self.filter.add("mongod.service")
         self.filter.add("mysql.service")
@@ -162,7 +162,7 @@ class TestClassUnitNameFilter:
         return unit_names
 
     def test_initialization_with_arg(self) -> None:
-        filter = UnitNameFilter(["test1.service", "test2.service"])
+        filter = NameFilter(["test1.service", "test2.service"])
         assert 2 == len(filter.get())
 
     def test_method_list(self) -> None:
