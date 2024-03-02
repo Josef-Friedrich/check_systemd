@@ -8,7 +8,7 @@ from check_systemd import Source
 
 Unit = Source.Unit
 UnitCache = Source.UnitCache
-UnitNameFilter = Source.UnitNameFilter
+UnitNameFilter = Source.NameFilter
 
 unit_modem_manager = Unit(
     name="ModemManager.service",

@@ -347,7 +347,7 @@ class Source:
         next: Optional[float]
         passed: Optional[float]
 
-    class UnitNameFilter:
+    class NameFilter:
         """This class stores all system unit names (e. g. ``nginx.service`` or
         ``fstrim.timer``) and provides a interface to filter the names by regular
         expressions."""
@@ -356,6 +356,29 @@ class Source:
 
         def __init__(self, unit_names: Sequence[str] = ()) -> None:
             self.__unit_names = set(unit_names)
+
+        @staticmethod
+        def __match(unit_name: str, regexes: str | Sequence[str]) -> bool:
+            """
+            Match multiple regular expressions against a unit name.
+
+            :param unit_name: The unit name to be matched.
+
+            :param regexes: A single regular expression (``include='.*service'``) or a
+            list of regular expressions (``include=('.*service', '.*mount')``).
+
+            :return: True if one regular expression matches"""
+            if isinstance(regexes, str):
+                regexes = [regexes]
+            for regex in regexes:
+                try:
+                    if re.match(regex, unit_name):
+                        return True
+                except Exception:
+                    raise CheckSystemdRegexpError(
+                        "Invalid regular expression: '{}'".format(regex)
+                    )
+            return False
 
         def add(self, unit_name: str) -> None:
             """Add one unit name.
@@ -387,12 +410,13 @@ class Source:
                 regular expression (``exclude='.*service'``) or a list of regular
                 expressions (``exclude=('.*service', '.*mount')``).
             """
+            match = Source.NameFilter.__match
             for name in self.__unit_names:
                 output: Optional[str] = name
-                if include and not match_multiple(name, include):
+                if include and not match(name, include):
                     output = None
 
-                if output and exclude and match_multiple(name, exclude):
+                if output and exclude and match(name, exclude):
                     output = None
 
                 if output:
@@ -403,11 +427,11 @@ class Source:
 
         __units: dict[str, Source.Unit]
 
-        __name_filter: Source.UnitNameFilter
+        __name_filter: Source.NameFilter
 
         def __init__(self) -> None:
             self.__units = {}
-            self.__name_filter = Source.UnitNameFilter()
+            self.__name_filter = Source.NameFilter()
 
         def add(self, unit: Source.Unit) -> None:
             self.__units[unit.name] = unit
