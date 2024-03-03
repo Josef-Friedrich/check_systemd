@@ -27,8 +27,8 @@ python = "^3.8"
 nagiosplugin = "^1.2"
 
 [tool.poetry.group.dev.dependencies]
-nagiosplugin-stubs = "0.5.0"
-# PyGObject = "^3" Slow tests on GitHub Actions and publishing to PyPI failed
+nagiosplugin-stubs = "^0.6.3"
+# PyGObject = "^3" # Slow tests on GitHub Actions and publishing to PyPI failed
 pygobject-stubs = "^2"
 pytest = "^8"
 readme-patcher = "^0"
