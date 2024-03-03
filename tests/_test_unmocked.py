@@ -69,3 +69,8 @@ class TestGetUnit:
         assert unit.active_state == "active"
         assert unit.sub_state == "running"
         assert unit.load_state == "loaded"
+
+
+class TestGetStartupTime:
+    def test_dbus(self, dbus: Source) -> None:
+        assert dbus.get_startup_time() == 9

@@ -872,28 +872,31 @@ class DbusSource(CliSource):
         there might be more unit names loaded than actual units behind them.
         The array consists of structures with the following elements:"""
 
+        def GetDefaultTarget(self) -> str:
+            ...
+
     class DbusUnit:
         __proxy: DBusProxy
 
         def __init__(self, proxy: DBusProxy) -> None:
             self.__proxy = proxy
 
-        def __get_property(self, name: str) -> Any:
+        def get_property(self, name: str) -> Any:
             variant = self.__proxy.get_cached_property(name)
             if variant is not None:
                 return variant.unpack()
 
         @property
         def active_state(self) -> str:
-            return self.__get_property("ActiveState")
+            return self.get_property("ActiveState")
 
         @property
         def sub_state(self) -> str:
-            return self.__get_property("SubState")
+            return self.get_property("SubState")
 
         @property
         def load_state(self) -> str:
-            return self.__get_property("LoadState")
+            return self.get_property("LoadState")
 
     def __get_proxy(
         self, user: bool, object_path: str, interface_name: str
@@ -922,11 +925,18 @@ class DbusSource(CliSource):
             ),
         )
 
+    def __get_object_path(self, name: str) -> str:
+        return self.__get_manager().GetUnit("(s)", name)
+
+    def __get_unit(self, name: str) -> DbusSource.DbusUnit:
+        return DbusSource.DbusUnit(
+            self.__get_proxy(
+                False, self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
+            )
+        )
+
     def get_unit(self, name: str) -> Source.Unit:
-        manager = self.__get_manager()
-        object_path = manager.GetUnit("(s)", name)
-        proxy = self.__get_proxy(False, object_path, "org.freedesktop.systemd1.Unit")
-        unit = DbusSource.DbusUnit(proxy)
+        unit = self.__get_unit(name)
         return Source.Unit(
             name,
             active_state=unit.active_state,
@@ -953,6 +963,23 @@ class DbusSource(CliSource):
                 sub_state=sub_state,
                 load_state=load_state,
             )
+
+    def __get_default_target(self) -> str:
+        return self.__get_manager().GetDefaultTarget()
+
+    def get_startup_time(self) -> float | None:
+        unit = self.__get_unit(self.__get_default_target())
+        # InactiveExitTimestamp, InactiveExitTimestampMonotonic, ActiveEnterTimestamp,
+        # ActiveEnterTimestampMonotonic, ActiveExitTimestamp, ActiveExitTimestampMonotonic,
+        # InactiveEnterTimestamp, and InactiveEnterTimestampMonotonic contain
+        # CLOCK_REALTIME and CLOCK_MONOTONIC 64-bit microsecond timestamps of
+        # the last time a unit left the inactive state, entered the active
+        # state, exited the active state, or entered an inactive state. These are the
+        # points in time where the unit transitioned "inactive"/"failed" →
+        # "activating", "activating" → "active", "active" → "deactivating", and
+        # finally "deactivating" → "inactive"/"failed". The fields are 0 in case
+        # such a transition has not yet been recorded on this boot.
+        return unit.get_property("ActiveEnterTimestampMonotonic")
 
 
 class Logger:
