@@ -1029,54 +1029,6 @@ Arguments).
 """
 
 
-# Data source: D-Bus ##########################################################
-
-
-class DbusManager:
-    """
-    This class holds the main entry point object of the D-Bus systemd API. See
-    the section `The Manager Object
-    <https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html#The%20Manager%20Object>`_
-    in the systemd D-Bus API.
-    """
-
-    __manager: DBusProxy
-
-    def __init__(self) -> None:
-        self.__manager = DbusManager.__proxy().new_for_bus_sync(
-            DbusManager.__bus_type().SYSTEM,
-            DbusManager.__flags().NONE,
-            None,
-            "org.freedesktop.systemd1",
-            "/org/freedesktop/systemd1",
-            "org.freedesktop.systemd1.Manager",
-            None,
-        )
-
-    @staticmethod
-    def __proxy() -> type[DBusProxy]:
-        """List all units."""
-        if DBusProxy:
-            return DBusProxy
-        raise Exception("The package PyGObject (gi) is not available.")
-
-    @staticmethod
-    def __bus_type() -> type[BusType]:
-        if BusType:
-            return BusType
-        raise Exception("The package PyGObject (gi) is not available.")
-
-    @staticmethod
-    def __flags() -> type[DBusProxyFlags]:
-        if DBusProxyFlags:
-            return DBusProxyFlags
-        raise Exception("The package PyGObject (gi) is not available.")
-
-    @property
-    def manager(self) -> DBusProxy:
-        return self.__manager
-
-
 # Unit abstraction ############################################################
 
 
