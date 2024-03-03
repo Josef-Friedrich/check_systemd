@@ -859,7 +859,10 @@ class DbusSource(CliSource):
         job_object_path: str
         """The job object path"""
 
-    class DbusApi:
+    class Manager:
+        def GetUnit(self, format: str, name: str) -> str:
+            ...
+
         def ListUnits(self) -> list[DbusSource.UnitTuple]:
             ...
 
@@ -868,24 +871,66 @@ class DbusSource(CliSource):
         there might be more unit names loaded than actual units behind them.
         The array consists of structures with the following elements:"""
 
-    def __get_manager(self, user: bool = False) -> DbusSource.DbusApi:
-        """List all units."""
+    class DbusUnit:
+        __proxy: DBusProxy
+
+        def __init__(self, proxy: DBusProxy) -> None:
+            self.__proxy = proxy
+
+        def __get_property(self, name: str) -> Any:
+            variant = self.__proxy.get_cached_property(name)
+            if variant is not None:
+                return variant.unpack()
+
+        @property
+        def active_state(self) -> str:
+            return self.__get_property("ActiveState")
+
+        @property
+        def sub_state(self) -> str:
+            return self.__get_property("SubState")
+
+        @property
+        def load_state(self) -> str:
+            return self.__get_property("LoadState")
+
+    def __get_proxy(
+        self, user: bool, object_path: str, interface_name: str
+    ) -> DBusProxy:
         if not DBusProxy or not BusType or not DBusProxyFlags:
             raise Exception("The package PyGObject (gi) is not available.")
-
         bus_type = BusType.SESSION if user else BusType.SYSTEM
+        return DBusProxy.new_for_bus_sync(
+            bus_type,
+            DBusProxyFlags.NONE,
+            None,
+            "org.freedesktop.systemd1",
+            object_path,
+            interface_name,
+            None,
+        )
 
+    def __get_manager(self, user: bool = False) -> DbusSource.Manager:
+        """List all units."""
         return cast(
-            DbusSource.DbusApi,
-            DBusProxy.new_for_bus_sync(
-                bus_type,
-                DBusProxyFlags.NONE,
-                None,
-                "org.freedesktop.systemd1",
+            DbusSource.Manager,
+            self.__get_proxy(
+                user,
                 "/org/freedesktop/systemd1",
                 "org.freedesktop.systemd1.Manager",
-                None,
             ),
+        )
+
+    def get_unit(self, name: str) -> Source.Unit:
+        manager = self.__get_manager()
+        object_path = manager.GetUnit("(s)", name)
+        proxy = self.__get_proxy(False, object_path, "org.freedesktop.systemd1.Unit")
+        unit = DbusSource.DbusUnit(proxy)
+        return Source.Unit(
+            name,
+            active_state=unit.active_state,
+            sub_state=unit.sub_state,
+            load_state=unit.load_state,
         )
 
     def get_all_units(self, user: bool = False) -> Generator[Source.Unit, None, None]:

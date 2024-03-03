@@ -56,14 +56,16 @@ class TestGetAllUnitsCached:
 
 
 class TestGetUnit:
-    def test_cli(self) -> None:
-        cli = CliSource()
+    def test_cli(self, cli: Source) -> None:
         unit = cli.get_unit("ssh.service")
         assert unit.name == "ssh.service"
         assert unit.active_state == "active"
         assert unit.sub_state == "running"
         assert unit.load_state == "loaded"
 
-    # def test_dbus(self) -> None:
-    #     dbus = DbusSource()
-    #     dbus.get_unit("")
+    def test_dbus(self, dbus: Source) -> None:
+        unit = dbus.get_unit("ssh.service")
+        assert unit.name == "ssh.service"
+        assert unit.active_state == "active"
+        assert unit.sub_state == "running"
+        assert unit.load_state == "loaded"
