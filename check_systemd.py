@@ -1290,7 +1290,9 @@ class StartupTimeContext(ScalarContext):
             self.warning = Range(opts.warning)
             self.critical = Range(opts.critical)
 
-    def performance(self, metric: Metric, resource: Resource) -> Performance:
+    def performance(self, metric: Metric, resource: Resource) -> Performance | None:
+        if not opts.performance_data:
+            return None
         return Performance(
             metric.name,
             metric.value,

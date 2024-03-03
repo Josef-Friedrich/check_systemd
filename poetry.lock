@@ -524,13 +524,13 @@ files = [
 
 [[package]]
 name = "nagiosplugin-stubs"
-version = "0.6.3"
+version = "0.6.4"
 description = "Type stubs for the nagiosplugin package."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "nagiosplugin_stubs-0.6.3-py3-none-any.whl", hash = "sha256:284c5833a2c27b722cc9181d6fdfe47659afae978d167394cdaff5582a5d9448"},
-    {file = "nagiosplugin_stubs-0.6.3.tar.gz", hash = "sha256:bf80d1a8448bd05d0377fccefc37bfa50a03a708bdcb78889e9a9fbe948d43e4"},
+    {file = "nagiosplugin_stubs-0.6.4-py3-none-any.whl", hash = "sha256:938219e2697d55545dca441aec8987c8b733188ef6895c747300f8ff70518a7a"},
+    {file = "nagiosplugin_stubs-0.6.4.tar.gz", hash = "sha256:7b96187ca485b790c81234676652c3ec2065019bd3f28cfa127ea601f4b49b6f"},
 ]
 
 [package.dependencies]
@@ -1081,4 +1081,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "23f76300b27a4868a49be58b7638f56de404cb28901ae2f96ef272b7f8399dc4"
+content-hash = "f254a5b2c814c90d267fe4702bfb0812af61abffb40ebd88a2ebe798c69e0bfd"
