@@ -262,6 +262,21 @@ Note that the ``LoadState`` is fully orthogonal to the ``ActiveState``
 was already active).
 """
 
+UnitType = Literal[
+    "service",
+    "service",
+    "socket",
+    "target",
+    "device",
+    "mount",
+    "automount",
+    "timer",
+    "swap",
+    "path",
+    "slice",
+    "scope",
+]
+
 
 T = TypeVar("T")
 """For UnitCache. Can not be an inner typevar because of pylance"""
@@ -570,6 +585,36 @@ class Source:
         value: float,
     ) -> float:
         return round(value, 1)
+
+    @staticmethod
+    def get_interface_name_from_unit_name(unit_name: str) -> str:
+        """
+        :param name: for example apt-daily.service
+
+        :return: org.freedesktop.systemd1.Service
+        """
+        name_segments = unit_name.split(".")
+        interface_name = name_segments[-1]
+        return "org.freedesktop.systemd1.{}".format(interface_name.title())
+
+    @staticmethod
+    def get_interface_name_from_object_path(object_path: str) -> str:
+        """
+        :param object_path: for example
+            ``/org/freedesktop/systemd1/unit/apt_2ddaily_2eservice``
+
+        :return: org.freedesktop.systemd1.Service
+        """
+        name_segments = object_path.split("_2e")
+        interface_name = name_segments[-1]
+        return "org.freedesktop.systemd1.{}".format(interface_name.title())
+
+    @staticmethod
+    def is_unit_type(unit_name_or_object_path: str, type_name: UnitType) -> bool:
+        return (
+            re.match(".*(\\.|_2e)" + type_name + "$", unit_name_or_object_path)
+            is not None
+        )
 
     def set_user(self, user: bool) -> None:
         self._user = user
