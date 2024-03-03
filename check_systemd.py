@@ -788,6 +788,7 @@ class CliSource(Source):
             # Bootup is not yet finished. Please try again later.
             if match:
                 return CliSource.__convert_to_sec(match.group(1))
+        return None
 
     def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
         stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
