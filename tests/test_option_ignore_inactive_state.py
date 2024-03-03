@@ -16,7 +16,7 @@ class TestOptionIgnoreInactiveState:
         result.assert_ok()
         result.assert_first_line(
             "SYSTEMD OK - ansible-pull.service: inactive | "
-            "count_units=2 startup_time=12.345;60;120 "
+            "count_units=2 startup_time=12.3;60;120 "
             "units_activating=0 units_active=1 units_failed=0 units_inactive=1"
         )
 
@@ -32,6 +32,6 @@ class TestOptionIgnoreInactiveState:
         result.assert_ok()
         result.assert_first_line(
             "SYSTEMD OK - ansible-pull.service: inactive | "
-            "count_units=2 startup_time=12.345;60;120 "
+            "count_units=2 startup_time=12.3;60;120 "
             "units_activating=0 units_active=1 units_failed=0 units_inactive=1"
         )

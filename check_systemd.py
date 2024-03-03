@@ -487,15 +487,26 @@ class Source:
 
             return counter
 
+    _user: bool = False
+
+    def _round(
+        self,
+        value: float,
+    ) -> float:
+        return round(value, 1)
+
+    def set_user(self, user: bool) -> None:
+        self._user = user
+
     def get_unit(self, name: str) -> Source.Unit:
         ...
 
-    def get_all_units(self, user: bool = False) -> Generator[Source.Unit, Any, None]:
+    def get_all_units(self) -> Generator[Source.Unit, Any, None]:
         ...
 
-    def get_all_units_cached(self, user: bool = False) -> Source.Cache[Source.Unit]:
+    def get_all_units_cached(self) -> Source.Cache[Source.Unit]:
         cache: Source.Cache[Source.Unit] = Source.Cache()
-        for unit in self.get_all_units(user):
+        for unit in self.get_all_units():
             cache.add(unit.name, unit)
         return cache
 
@@ -748,9 +759,9 @@ class CliSource(Source):
             load_state=properties["LoadState"],
         )
 
-    def get_all_units(self, user: bool = False) -> Generator[Source.Unit, None, None]:
+    def get_all_units(self) -> Generator[Source.Unit, None, None]:
         command = ["systemctl", "list-units", "--all"]
-        if user:
+        if self._user:
             command += ["--user"]
         stdout = CliSource.__execute_cli(command)
         if stdout:
@@ -787,7 +798,7 @@ class CliSource(Source):
             # Output when boot process is not finished:
             # Bootup is not yet finished. Please try again later.
             if match:
-                return CliSource.__convert_to_sec(match.group(1))
+                return self._round(CliSource.__convert_to_sec(match.group(1)))
         return None
 
     def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
@@ -875,37 +886,42 @@ class DbusSource(CliSource):
         def GetDefaultTarget(self) -> str:
             ...
 
-    class DbusUnit:
+    class Accessor:
+        """Wrap an D-Bus proxy object."""
+
         __proxy: DBusProxy
 
         def __init__(self, proxy: DBusProxy) -> None:
             self.__proxy = proxy
 
-        def get_property(self, name: str) -> Any:
+        def get(self, name: str) -> Any:
             variant = self.__proxy.get_cached_property(name)
             if variant is not None:
                 return variant.unpack()
 
         @property
         def active_state(self) -> str:
-            return self.get_property("ActiveState")
+            return self.get("ActiveState")
 
         @property
         def sub_state(self) -> str:
-            return self.get_property("SubState")
+            return self.get("SubState")
 
         @property
         def load_state(self) -> str:
-            return self.get_property("LoadState")
+            return self.get("LoadState")
 
-    def __get_proxy(
-        self, user: bool, object_path: str, interface_name: str
-    ) -> DBusProxy:
-        if not DBusProxy or not BusType or not DBusProxyFlags:
+    @property
+    def __bus_type(self) -> BusType:
+        if not BusType:
             raise Exception("The package PyGObject (gi) is not available.")
-        bus_type = BusType.SESSION if user else BusType.SYSTEM
+        return BusType.SESSION if self._user else BusType.SYSTEM
+
+    def __get_proxy(self, object_path: str, interface_name: str) -> DBusProxy:
+        if not DBusProxy or not DBusProxyFlags:
+            raise Exception("The package PyGObject (gi) is not available.")
         return DBusProxy.new_for_bus_sync(
-            bus_type,
+            self.__bus_type,
             DBusProxyFlags.NONE,
             None,
             "org.freedesktop.systemd1",
@@ -914,34 +930,34 @@ class DbusSource(CliSource):
             None,
         )
 
-    def __get_manager(self, user: bool = False) -> DbusSource.Manager:
-        """List all units."""
-        return cast(
-            DbusSource.Manager,
-            self.__get_proxy(
-                user,
-                "/org/freedesktop/systemd1",
-                "org.freedesktop.systemd1.Manager",
-            ),
+    @property
+    def __manager_proxy(self) -> DBusProxy:
+        return self.__get_proxy(
+            "/org/freedesktop/systemd1",
+            "org.freedesktop.systemd1.Manager",
         )
 
-    def __get_object_path(self, name: str) -> str:
-        return self.__get_manager().GetUnit("(s)", name)
+    @property
+    def __manager(self) -> DbusSource.Manager:
+        return cast(DbusSource.Manager, self.__manager_proxy)
 
-    def __get_unit(self, name: str) -> DbusSource.DbusUnit:
-        return DbusSource.DbusUnit(
+    def __get_object_path(self, name: str) -> str:
+        return self.__manager.GetUnit("(s)", name)
+
+    def __get_accessor(self, name: str) -> DbusSource.Accessor:
+        return DbusSource.Accessor(
             self.__get_proxy(
-                False, self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
+                self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
             )
         )
 
     def get_unit(self, name: str) -> Source.Unit:
-        unit = self.__get_unit(name)
+        accessor = self.__get_accessor(name)
         return Source.Unit(
             name,
-            active_state=unit.active_state,
-            sub_state=unit.sub_state,
-            load_state=unit.load_state,
+            active_state=accessor.active_state,
+            sub_state=accessor.sub_state,
+            load_state=accessor.load_state,
         )
 
     def get_all_units(self, user: bool = False) -> Generator[Source.Unit, None, None]:
@@ -956,7 +972,7 @@ class DbusSource(CliSource):
             _,
             _,
             _,
-        ) in self.__get_manager(user).ListUnits():
+        ) in self.__manager.ListUnits():
             yield self.Unit(
                 name=name,
                 active_state=active_state,
@@ -965,21 +981,29 @@ class DbusSource(CliSource):
             )
 
     def __get_default_target(self) -> str:
-        return self.__get_manager().GetDefaultTarget()
+        return self.__manager.GetDefaultTarget()
+
+    @property
+    def __userspace_timestamp_monotonic(self) -> int:
+        unit = DbusSource.Accessor(self.__manager_proxy)
+        return unit.get("UserspaceTimestampMonotonic")
 
     def get_startup_time(self) -> float | None:
-        unit = self.__get_unit(self.__get_default_target())
-        # InactiveExitTimestamp, InactiveExitTimestampMonotonic, ActiveEnterTimestamp,
-        # ActiveEnterTimestampMonotonic, ActiveExitTimestamp, ActiveExitTimestampMonotonic,
-        # InactiveEnterTimestamp, and InactiveEnterTimestampMonotonic contain
+        """`src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`"""
+        unit = self.__get_accessor(self.__get_default_target())
+        # ... ActiveEnterTimestamp,
+        # ActiveEnterTimestampMonotonic ... contain
         # CLOCK_REALTIME and CLOCK_MONOTONIC 64-bit microsecond timestamps of
         # the last time a unit left the inactive state, entered the active
-        # state, exited the active state, or entered an inactive state. These are the
-        # points in time where the unit transitioned "inactive"/"failed" →
-        # "activating", "activating" → "active", "active" → "deactivating", and
-        # finally "deactivating" → "inactive"/"failed". The fields are 0 in case
+        # state, .... The fields are 0 in case
         # such a transition has not yet been recorded on this boot.
-        return unit.get_property("ActiveEnterTimestampMonotonic")
+
+        enter_timestamp = unit.get("ActiveEnterTimestampMonotonic")
+        if not enter_timestamp:
+            return None
+        return self._round(
+            (enter_timestamp - self.__userspace_timestamp_monotonic) / 1_000_000
+        )
 
 
 class Logger:
@@ -1069,14 +1093,16 @@ class OptionContainer:
     # scope: startup_time
     scope_startup_time: bool
     warning: int
-    """-w, --warning"""
+    """``-w``, ``--warning``"""
 
     critical: int
-    """-c, --critical"""
+    """``-c``, ``--critical``"""
 
     # backend
     data_source: Optional[Literal["dbus", "cli"]]
-    with_user_units: bool
+
+    user: bool = False
+    """``--user``"""
 
     # performance_data
     performance_data: bool
@@ -1705,7 +1731,7 @@ def get_argparser() -> argparse.ArgumentParser:
 
     acquisition.add_argument(
         "--user",
-        dest="with_user_units",
+        dest="user",
         action="store_true",
         default=False,
         help="Also show user (systemctl --user) units.",
@@ -1784,8 +1810,8 @@ def main() -> None:
         source = DbusSource()
     else:
         source = CliSource()
-
-    units = source.get_all_units_cached(user=opts.with_user_units)
+    source.set_user(opts.user)
+    units = source.get_all_units_cached()
 
     if opts.include_unit is not None:
         unit = source.get_unit(opts.include_unit)
