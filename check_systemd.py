@@ -267,6 +267,74 @@ T = TypeVar("T")
 """For UnitCache. Can not be an inner typevar because of pylance"""
 
 
+class Logger:
+    """A wrapper around the Python logging module with 3 debug logging levels.
+
+    1. ``-d``: info
+    2. ``-dd``: debug
+    3. ``-ddd``: verbose
+    """
+
+    __logger: logging.Logger
+
+    __BLUE = "\x1b[0;34m"
+    __PURPLE = "\x1b[0;35m"
+    __CYAN = "\x1b[0;36m"
+    __RESET = "\x1b[0m"
+
+    __INFO = logging.INFO
+    __DEBUG = logging.DEBUG
+    __VERBOSE = 5
+
+    def __init__(self) -> None:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.basicConfig(handlers=[handler])
+        self.__logger = logging.getLogger(__name__)
+
+    def set_level(self, level: int) -> None:
+        # NOTSET=0
+        # custom level: VERBOSE=5
+        # DEBUG=10
+        # INFO=20
+        # WARN=30
+        # ERROR=40
+        # CRITICAL=50
+        if level == 1:
+            self.__logger.setLevel(logging.INFO)
+        elif level == 2:
+            self.__logger.setLevel(logging.DEBUG)
+        elif level > 2:
+            self.__logger.setLevel(5)
+
+    def __log(self, level: int, color: str, msg: str, *args: object) -> None:
+        a: list[str] = []
+        for arg in args:
+            a.append(color + str(arg) + self.__RESET)
+        self.__logger.log(level, msg, *a)
+
+    def info(self, msg: str, *args: object) -> None:
+        """Log on debug level 1: ``-d``"""
+        self.__log(self.__INFO, self.__BLUE, msg, *args)
+
+    def debug(self, msg: str, *args: object) -> None:
+        """Log on debug level 2: ``-dd``"""
+        self.__log(self.__DEBUG, self.__PURPLE, msg, *args)
+
+    def verbose(self, msg: str, *args: object) -> None:
+        """Log on debug level 3: ``-ddd``"""
+        self.__log(self.__VERBOSE, self.__CYAN, msg, *args)
+
+    def show_levels(self) -> None:
+        msg = "log level %s (%s): %s"
+        self.info(msg, 1, "info", "-d")
+        self.debug(msg, 2, "debug", "-dd")
+        self.verbose(msg, 3, "verbose", "-ddd")
+
+
+logger = Logger()
+
+
 class Source:
     class BaseUnit:
         name: str
@@ -319,6 +387,14 @@ class Source:
             self.active_state = self.__check_active_state(active_state)
             self.sub_state = self.__check_sub_state(sub_state)
             self.load_state = self.__check_load_state(load_state)
+
+            logger.debug(
+                "Create unit object: name: %s, active_state: %s, sub_state: %s, load_state: %s",
+                self.name,
+                self.active_state,
+                self.sub_state,
+                self.load_state,
+            )
 
         def convert_to_exitcode(self) -> ServiceState:
             """Convert the different systemd states into a Nagios compatible
@@ -897,7 +973,15 @@ class DbusSource(CliSource):
         def get(self, name: str) -> Any:
             variant = self.__proxy.get_cached_property(name)
             if variant is not None:
-                return variant.unpack()
+                value = variant.unpack()
+                logger.verbose(
+                    "Get property '%s' from object path %s of interface %s: %s",
+                    name,
+                    self.__proxy.get_object_path(),
+                    self.__proxy.get_interface_name(),
+                    value,
+                )
+                return value
 
         @property
         def active_state(self) -> str:
@@ -1004,67 +1088,6 @@ class DbusSource(CliSource):
         return self._round(
             (enter_timestamp - self.__userspace_timestamp_monotonic) / 1_000_000
         )
-
-
-class Logger:
-    __logger: logging.Logger
-
-    __BLUE = "\x1b[0;34m"
-    __PURPLE = "\x1b[0;35m"
-    __CYAN = "\x1b[0;36m"
-    __RESET = "\x1b[0m"
-
-    __INFO = logging.INFO
-    __DEBUG = logging.DEBUG
-    __VERBOSE = 5
-
-    def __init__(self) -> None:
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(message)s"))
-        logging.basicConfig(handlers=[handler])
-        self.__logger = logging.getLogger(__name__)
-
-    def set_level(self, level: int) -> None:
-        # NOTSET=0
-        # custom level: VERBOSE=5
-        # DEBUG=10
-        # INFO=20
-        # WARN=30
-        # ERROR=40
-        # CRITICAL=50
-        if level == 1:
-            self.__logger.setLevel(logging.INFO)
-        elif level == 2:
-            self.__logger.setLevel(logging.DEBUG)
-        elif level > 2:
-            self.__logger.setLevel(5)
-
-    def __log(self, level: int, color: str, msg: str, *args: object) -> None:
-        a: list[str] = []
-        for arg in args:
-            a.append(color + str(arg) + self.__RESET)
-        self.__logger.log(level, msg, *a)
-
-    def info(self, msg: str, *args: object) -> None:
-        """Log ``-d``"""
-        self.__log(self.__INFO, self.__BLUE, msg, *args)
-
-    def debug(self, msg: str, *args: object) -> None:
-        """Log ``-dd``"""
-        self.__log(self.__DEBUG, self.__PURPLE, msg, *args)
-
-    def verbose(self, msg: str, *args: object) -> None:
-        """Log ``-ddd``"""
-        self.__log(self.__VERBOSE, self.__CYAN, msg, *args)
-
-    def show_levels(self) -> None:
-        msg = "log level %s (%s): %s"
-        self.info(msg, 1, "info", "-d")
-        self.debug(msg, 2, "debug", "-dd")
-        self.verbose(msg, 3, "verbose", "-ddd")
-
-
-logger = Logger()
 
 
 class OptionContainer:
@@ -1804,9 +1827,11 @@ def main() -> None:
 
     logger.set_level(opts.debug)
     logger.show_levels()
+    logger.verbose("Normalized argparse options: %s", opts)
+    logger.verbose("is_dbus: %s", is_dbus)
 
     source: Source
-    if is_dbus and opts.data_source == "dbus":
+    if opts.data_source == "dbus":
         source = DbusSource()
     else:
         source = CliSource()
