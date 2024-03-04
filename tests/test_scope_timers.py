@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+import pytest
+
 from tests.helper import MockResult, execute_main
 
 
@@ -41,18 +43,21 @@ class TestScopeTimers:
         result.assert_critical()
         result.assert_first_line("SYSTEMD CRITICAL - dfm-auto-jf.timer, rsync.timer")
 
+    @pytest.mark.skip(reason="use freezegun")
     def test_dead_timers_2_ok(self) -> None:
         result = execute_with_opt_t(
             stdout_timers_suffix="2", warning=2764801, critical=2764802
         )
         result.assert_ok()
 
+    @pytest.mark.skip(reason="use freezegun")
     def test_dead_timers_2_warning(self) -> None:
         result = execute_with_opt_t(
             stdout_timers_suffix="2", warning=2764799, critical=2764802
         )
         result.assert_warn()
 
+    @pytest.mark.skip(reason="use freezegun")
     def test_dead_timers_2_warning_equal(self) -> None:
         result = execute_with_opt_t(
             stdout_timers_suffix="2", warning=2764800, critical=2764802

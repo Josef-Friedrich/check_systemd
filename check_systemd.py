@@ -62,6 +62,7 @@ import re
 import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from typing import (
     Any,
     Generator,
@@ -426,9 +427,35 @@ class Source:
 
     @dataclass
     class Timer(BaseUnit):
+        """
+        # Dbus doc
+        # readonly t NextElapseUSecRealtime = ...;
+        # readonly t NextElapseUSecMonotonic = ...;
+        # readonly t LastTriggerUSec = ...;
+        # readonly t LastTriggerUSecMonotonic = ...;
+        # NextElapseUSecRealtime contains the next elapsation point on the CLOCK_REALTIME clock in miscroseconds since the epoch, or 0 if this timer event does not include at least one calendar event.
+
+        # Similarly, NextElapseUSecMonotonic contains the next elapsation point on the CLOCK_MONOTONIC clock in microseconds since the epoch, or 0 if this timer event does not include at least one monotonic event.
+
+        # https://github.com/systemd/systemd/blob/e0270bab43a4c37028ee32ae853037df22999767/src/systemctl/systemctl-list-units.c#L668-L671'
+        # TABLE_TIMESTAMP, t->next_elapse,
+        # TABLE_TIMESTAMP_LEFT, t->next_elapse,
+        # TABLE_TIMESTAMP, t->last_trigger.realtime,
+        # TABLE_TIMESTAMP_RELATIVE_MONOTONIC, t->last_trigger.monotonic,
+
+
+        # https://github.com/systemd/systemd/blob/e0270bab43a4c37028ee32ae853037df22999767/src/core/dbus-timer.c#L111
+        # SD_BUS_PROPERTY("NextElapseUSecRealtime", "t", bus_property_get_usec, offsetof(Timer, next_elapse_realtime), SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+        # SD_BUS_PROPERTY("NextElapseUSecMonotonic", "t", property_get_next_elapse_monotonic, 0, SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+        # BUS_PROPERTY_DUAL_TIMESTAMP("LastTriggerUSec", offsetof(Timer, last_trigger), SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+        """
+
         name: str
-        next: Optional[float]
-        passed: Optional[float]
+        last: Optional[int]
+        """Timestamp"""
+
+        next: Optional[int]
+        """Timestamp"""
 
     class NameFilter:
         """This class stores all system unit names (e. g. ``nginx.service`` or
@@ -589,17 +616,17 @@ class Source:
 
     _user: bool = False
 
-    def _round(
+    def _round_1(
         self,
         value: float,
     ) -> float:
         return round(value, 1)
 
-    def _to_seconds(
+    def _usec_to_sec(
         self,
         usec: int,
-    ) -> float:
-        return usec / 1_000_000
+    ) -> int:
+        return int(usec / 1_000_000)
 
     @staticmethod
     def get_interface_name_from_unit_name(unit_name: str) -> str:
@@ -840,7 +867,7 @@ class CliSource(Source):
 
     @staticmethod
     def __convert_to_sec(fmt_timespan: str) -> float:
-        """Convert a timespan format string into secondes. Take a look at the
+        """Convert a timespan format string to seconds. Take a look at the
         systemd `time-util.c
         <https://github.com/systemd/systemd/blob/master/src/basic/time-util.c>`_
         source code.
@@ -875,6 +902,12 @@ class CliSource(Source):
                 unit = match.group(2)
                 result += float(value) * seconds[unit]
         return round(float(result), 3)
+
+    @staticmethod
+    def __convert_to_timestamp(date_format: str) -> int:
+        return int(
+            datetime.strptime(date_format, "%a %Y-%m-%d %H:%M:%S %Z").timestamp()
+        )
 
     def get_unit(self, name: str) -> Source.Unit:
         stdout = CliSource.__execute_cli(
@@ -951,11 +984,12 @@ class CliSource(Source):
             # Output when boot process is not finished:
             # Bootup is not yet finished. Please try again later.
             if match:
-                return self._round(CliSource.__convert_to_sec(match.group(1)))
+                return self._round_1(CliSource.__convert_to_sec(match.group(1)))
         return None
 
     @property
     def _all_timers(self) -> list[Source.Timer]:
+        """https://github.com/systemd/systemd/blob/e0270bab43a4c37028ee32ae853037df22999767/src/systemctl/systemctl-list-units.c#L641-L689"""
         stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
 
         # NEXT                          LEFT
@@ -969,20 +1003,20 @@ class CliSource(Source):
         timers: list[Source.Timer] = []
         if stdout:
             table_parser = CliSource.Table(stdout)
-            table_parser.check_header(("unit", "next", "passed"))
+            table_parser.check_header(("unit", "next", "last"))
 
             for row in table_parser.list_rows():
-                unit = row["unit"]
+                name = row["unit"]
 
                 next: Optional[float] = None
-                passed: Optional[float] = None
+                last: Optional[float] = None
 
                 if row["next"] != "n/a":
-                    next = CliSource.__convert_to_sec(row["next"])
-                if row["passed"] != "n/a":
-                    passed = CliSource.__convert_to_sec(row["passed"])
+                    next = CliSource.__convert_to_timestamp(row["next"])
+                if row["last"] != "n/a":
+                    last = CliSource.__convert_to_timestamp(row["last"])
 
-                timers.append(Source.Timer(name=unit, next=next, passed=passed))
+                timers.append(Source.Timer(name=name, next=next, last=last))
         return timers
 
 
@@ -1078,6 +1112,38 @@ class DbusSource(CliSource):
         def load_state(self) -> str:
             return self.get("LoadState")
 
+    class ProxyWrapper:
+        """Wrap an D-Bus proxy object."""
+
+        __proxy: DBusProxy
+
+        def __init__(self, proxy: DBusProxy) -> None:
+            self.__proxy = proxy
+
+        def _get(self, name: str) -> Any:
+            variant = self.__proxy.get_cached_property(name)
+            if variant is not None:
+                value = variant.unpack()
+                logger.verbose(
+                    "Get property '%s' from object path %s of interface %s: %s",
+                    name,
+                    self.__proxy.get_object_path(),
+                    self.__proxy.get_interface_name(),
+                    value,
+                )
+                return value
+
+    class TimerProxy(ProxyWrapper):
+        @property
+        def last(self) -> int:
+            """Timestamp in microseconds"""
+            return self._get("LastTriggerUSec")
+
+        @property
+        def next(self) -> int:
+            """Timestamp in microseconds"""
+            return self._get("NextElapseUSecRealtime")
+
     @property
     def __bus_type(self) -> BusType:
         if not BusType:
@@ -1118,8 +1184,8 @@ class DbusSource(CliSource):
             )
         )
 
-    def __get_timer(self, object_path: str) -> DbusSource.Accessor:
-        return DbusSource.Accessor(
+    def __get_timer(self, object_path: str) -> DbusSource.TimerProxy:
+        return DbusSource.TimerProxy(
             self.__get_proxy(object_path, "org.freedesktop.systemd1.Timer")
         )
 
@@ -1176,7 +1242,7 @@ class DbusSource(CliSource):
         enter_timestamp = unit.get("ActiveEnterTimestampMonotonic")
         if not enter_timestamp:
             return None
-        return self._round(
+        return self._round_1(
             (enter_timestamp - self.__userspace_timestamp_monotonic) / 1_000_000
         )
 
@@ -1196,14 +1262,19 @@ class DbusSource(CliSource):
             _,
         ) in self.__manager.ListUnits():
             if name.endswith(".timer"):
-                accessor = self.__get_timer(unit_object_path)
+                timer = self.__get_timer(unit_object_path)
+
+                def _to_timestamp(usec: int) -> Optional[int]:
+                    result: Optional[int] = None
+                    if timer.last > 0:
+                        result = self._usec_to_sec(usec)
+                    return result
+
                 timers.append(
                     Source.Timer(
                         name=name,
-                        next=self._to_seconds(accessor.get("NextElapseUSecMonotonic")),
-                        passed=self._to_seconds(
-                            accessor.get("LastTriggerUSecMonotonic")
-                        ),
+                        next=_to_timestamp(timer.next),
+                        last=_to_timestamp(timer.last),
                     )
                 )
         return timers
@@ -1423,13 +1494,13 @@ class TimersResource(Resource):
     def probe(self) -> Generator[Metric, None, None]:
         for timer in self.source.timers.filter(exclude=opts.exclude):
             state = Ok
+            now = int(datetime.now().timestamp())
             if timer.next is None:
-                if timer.passed is None:
+                if timer.last is None:
                     state = Critical
-
-                elif timer.passed >= opts.timers_critical:
+                elif now - timer.last >= opts.timers_critical:
                     state = Critical
-                elif timer.passed >= opts.timers_warning:
+                elif now - timer.last >= opts.timers_warning:
                     state = Warn
             yield Metric(name=timer.name, value=state, context="timers")
 
