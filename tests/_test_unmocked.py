@@ -66,13 +66,19 @@ class TestPropertyStartupTime:
         assert cli.startup_time == dbus.startup_time
 
 
-class TestPropertyAllTimers:
+class TestPropertyTimers:
     def test_dbus(self, dbus: Source) -> None:
         for timer in dbus.timers.filter():
             print(timer)
 
     def test_compare(self, cli: Source, dbus: Source) -> None:
         assert cli.timers.count == dbus.timers.count
+
+        first_cli = list(cli.timers)[0]
+        first_dbus = list(dbus.timers)[0]
+        assert first_cli.name == first_dbus.name
+        assert first_cli.next == first_dbus.next
+        assert first_cli.passed == first_dbus.passed
 
 
 class TestDbus:

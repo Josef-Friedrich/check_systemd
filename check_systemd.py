@@ -440,6 +440,10 @@ class Source:
         def __init__(self, unit_names: Sequence[str] = ()) -> None:
             self.__unit_names = set(unit_names)
 
+        def __iter__(self) -> Generator[str, None, None]:
+            for name in sorted(self.__unit_names):
+                yield name
+
         @staticmethod
         def match(unit_name: str, regexes: str | Sequence[str]) -> bool:
             """
@@ -515,6 +519,10 @@ class Source:
         def __init__(self) -> None:
             self.__units = {}
             self.__name_filter = Source.NameFilter()
+
+        def __iter__(self) -> Generator[T, None, None]:
+            for name in self.__name_filter:
+                yield self.__units[name]
 
         def add(self, name: str, unit: T) -> None:
             self.__units[name] = unit

@@ -29,5 +29,11 @@
   },
   "python.defaultInterpreterPath": ".venv/bin/python",
   "python.testing.pytestEnabled": true,
-  "esbonio.sphinx.confDir": ""
+  "esbonio.sphinx.confDir": "",
+  "python.testing.pytestArgs": [
+    "--capture=tee-sys",
+    "-vv",
+    "--rootdir",
+    "${workspaceFolder}/tests"
+  ]
 }
