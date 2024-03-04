@@ -636,8 +636,9 @@ class Source:
             cache.add(unit.name, unit)
         return cache
 
+    @property
     @abstractmethod
-    def get_startup_time(self) -> float | None:
+    def startup_time(self) -> float | None:
         ...
 
     @abstractmethod
@@ -904,7 +905,8 @@ class CliSource(Source):
                     load_state=row["load"],
                 )
 
-    def get_startup_time(self) -> float | None:
+    @property
+    def startup_time(self) -> float | None:
         stdout = None
         try:
             stdout = CliSource.__execute_cli(["systemd-analyze"])
@@ -1121,7 +1123,8 @@ class DbusSource(CliSource):
                 load_state=load_state,
             )
 
-    def __get_default_target(self) -> str:
+    @property
+    def __default_target(self) -> str:
         return self.__manager.GetDefaultTarget()
 
     @property
@@ -1129,9 +1132,10 @@ class DbusSource(CliSource):
         unit = DbusSource.Accessor(self.__manager_proxy)
         return unit.get("UserspaceTimestampMonotonic")
 
-    def get_startup_time(self) -> float | None:
+    @property
+    def startup_time(self) -> float | None:
         """`src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`"""
-        unit = self.__get_accessor(self.__get_default_target())
+        unit = self.__get_accessor(self.__default_target)
         # ... ActiveEnterTimestamp,
         # ActiveEnterTimestampMonotonic ... contain
         # CLOCK_REALTIME and CLOCK_MONOTONIC 64-bit microsecond timestamps of
@@ -1408,7 +1412,7 @@ class StartupTimeResource(Resource):
         self.__source = source
 
     def probe(self) -> Generator[Metric, None, None]:
-        startup_time = self.__source.get_startup_time()
+        startup_time = self.__source.startup_time
         if startup_time:
             yield Metric(
                 name="startup_time",

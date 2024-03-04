@@ -52,7 +52,7 @@ class TestGetUnit:
 
 class TestGetStartupTime:
     def assert_startup_time(self, source: Source) -> None:
-        startup_time = source.get_startup_time()
+        startup_time = source.startup_time
         assert startup_time
         assert startup_time > 0
 
@@ -63,7 +63,7 @@ class TestGetStartupTime:
         self.assert_startup_time(dbus)
 
     def test_compare(self, cli: Source, dbus: Source) -> None:
-        assert cli.get_startup_time() == dbus.get_startup_time()
+        assert cli.startup_time == dbus.startup_time
 
 
 class TestDbus:
