@@ -50,7 +50,7 @@ class TestGetUnit:
         assert unit.load_state == "loaded"
 
 
-class TestGetStartupTime:
+class TestPropertyStartupTime:
     def assert_startup_time(self, source: Source) -> None:
         startup_time = source.startup_time
         assert startup_time
@@ -64,6 +64,12 @@ class TestGetStartupTime:
 
     def test_compare(self, cli: Source, dbus: Source) -> None:
         assert cli.startup_time == dbus.startup_time
+
+
+class TestPropertyAllTimers:
+    def test_dbus(self, dbus: Source) -> None:
+        for timer in dbus.all_timers:
+            print(timer)
 
 
 class TestDbus:

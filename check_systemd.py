@@ -587,6 +587,12 @@ class Source:
     ) -> float:
         return round(value, 1)
 
+    def _to_seconds(
+        self,
+        usec: int,
+    ) -> float:
+        return usec / 1_000_000
+
     @staticmethod
     def get_interface_name_from_unit_name(unit_name: str) -> str:
         """
@@ -641,8 +647,9 @@ class Source:
     def startup_time(self) -> float | None:
         ...
 
+    @property
     @abstractmethod
-    def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
+    def all_timers(self) -> Generator[Source.Timer, Any, None]:
         ...
 
 
@@ -932,7 +939,8 @@ class CliSource(Source):
                 return self._round(CliSource.__convert_to_sec(match.group(1)))
         return None
 
-    def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
+    @property
+    def all_timers(self) -> Generator[Source.Timer, Any, None]:
         stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
 
         # NEXT                          LEFT
@@ -973,34 +981,34 @@ class DbusSource(CliSource):
 
     class UnitTuple(NamedTuple):
         name: str
-        """The primary unit name as string"""
+        """The primary unit name as string, for example ``dbus.service``"""
 
         description: str
-        """The human readable description string"""
+        """The human readable description string, for example ``D-Bus System Message Bus``"""
 
         load_state: LoadState
-        """The load state (i.e. whether the unit file has been loaded successfully)"""
+        """The load state (i.e. whether the unit file has been loaded successfully), for example ``loaded``"""
 
         active_state: ActiveState
-        """The active state (i.e. whether the unit is currently started or not)"""
+        """The active state (i.e. whether the unit is currently started or not), for example ``active``"""
 
         sub_state: SubState
-        """The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)"""
+        """The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not), for example ``running``"""
 
         followed_by: str
-        """A unit that is being followed in its state by this unit, if there is any, otherwise the empty string."""
+        """A unit that is being followed in its state by this unit, if there is any, otherwise the empty string, for example ``''``"""
 
         unit_object_path: str
-        """The unit object path"""
+        """The unit object path, for example ``/org/freedesktop/systemd1/unit/dbus_2eservice``"""
 
         job_id: str
-        """If there is a job queued for the job unit, the numeric job id, 0 otherwise"""
+        """If there is a job queued for the job unit, the numeric job id, 0 otherwise, for example ``0``"""
 
         job_type: str
-        """The job type as string"""
+        """The job type as string, for example ``''``"""
 
         job_object_path: str
-        """The job object path"""
+        """The job object path, for example ``/``"""
 
     class Manager:
         @abstractmethod
@@ -1086,15 +1094,20 @@ class DbusSource(CliSource):
     def __get_object_path(self, name: str) -> str:
         return self.__manager.GetUnit("(s)", name)
 
-    def __get_accessor(self, name: str) -> DbusSource.Accessor:
+    def __get_unit(self, name: str) -> DbusSource.Accessor:
         return DbusSource.Accessor(
             self.__get_proxy(
                 self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
             )
         )
 
+    def __get_timer(self, object_path: str) -> DbusSource.Accessor:
+        return DbusSource.Accessor(
+            self.__get_proxy(object_path, "org.freedesktop.systemd1.Timer")
+        )
+
     def get_unit(self, name: str) -> Source.Unit:
-        accessor = self.__get_accessor(name)
+        accessor = self.__get_unit(name)
         return Source.Unit(
             name,
             active_state=accessor.active_state,
@@ -1135,7 +1148,7 @@ class DbusSource(CliSource):
     @property
     def startup_time(self) -> float | None:
         """`src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`"""
-        unit = self.__get_accessor(self.__default_target)
+        unit = self.__get_unit(self.__default_target)
         # ... ActiveEnterTimestamp,
         # ActiveEnterTimestampMonotonic ... contain
         # CLOCK_REALTIME and CLOCK_MONOTONIC 64-bit microsecond timestamps of
@@ -1149,6 +1162,29 @@ class DbusSource(CliSource):
         return self._round(
             (enter_timestamp - self.__userspace_timestamp_monotonic) / 1_000_000
         )
+
+    @property
+    def all_timers(self) -> Generator[Source.Timer, Any, None]:
+        for (
+            name,
+            _,
+            load_state,
+            active_state,
+            sub_state,
+            _,
+            unit_object_path,
+            _,
+            _,
+            _,
+        ) in self.__manager.ListUnits():
+            if name.endswith(".timer"):
+                accessor = self.__get_timer(unit_object_path)
+
+                yield Source.Timer(
+                    name=name,
+                    next=self._to_seconds(accessor.get("NextElapseUSecMonotonic")),
+                    passed=self._to_seconds(accessor.get("LastTriggerUSecMonotonic")),
+                )
 
 
 class OptionContainer:
@@ -1363,7 +1399,7 @@ class TimersResource(Resource):
         self.source = source
 
     def probe(self) -> Generator[Metric, None, None]:
-        for timer in self.source.get_all_timers():
+        for timer in self.source.all_timers:
             if Source.NameFilter.match(timer.name, opts.exclude):
                 continue
 
