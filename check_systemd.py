@@ -494,7 +494,7 @@ class Source:
                 expressions (``exclude=('.*service', '.*mount')``).
             """
             match = Source.NameFilter.match
-            for name in self.__unit_names:
+            for name in sorted(self.__unit_names):
                 output: Optional[str] = name
                 if include and not match(name, include):
                     output = None
@@ -636,7 +636,7 @@ class Source:
         ...
 
     @property
-    def all_units(self) -> Source.Cache[Source.Unit]:
+    def units(self) -> Source.Cache[Source.Unit]:
         cache: Source.Cache[Source.Unit] = Source.Cache()
         for unit in self._all_units:
             cache.add(unit.name, unit)
@@ -649,8 +649,15 @@ class Source:
 
     @property
     @abstractmethod
-    def all_timers(self) -> Generator[Source.Timer, Any, None]:
+    def _all_timers(self) -> list[Source.Timer]:
         ...
+
+    @property
+    def timers(self) -> Source.Cache[Source.Timer]:
+        cache: Source.Cache[Source.Timer] = Source.Cache()
+        for timer in self._all_timers:
+            cache.add(timer.name, timer)
+        return cache
 
 
 class CliSource(Source):
@@ -940,7 +947,7 @@ class CliSource(Source):
         return None
 
     @property
-    def all_timers(self) -> Generator[Source.Timer, Any, None]:
+    def _all_timers(self) -> list[Source.Timer]:
         stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
 
         # NEXT                          LEFT
@@ -951,6 +958,7 @@ class CliSource(Source):
 
         # UNIT             ACTIVATES
         # apt-daily.timer  apt-daily.service
+        timers: list[Source.Timer] = []
         if stdout:
             table_parser = CliSource.Table(stdout)
             table_parser.check_header(("unit", "next", "passed"))
@@ -966,7 +974,8 @@ class CliSource(Source):
                 if row["passed"] != "n/a":
                     passed = CliSource.__convert_to_sec(row["passed"])
 
-                yield Source.Timer(name=unit, next=next, passed=passed)
+                timers.append(Source.Timer(name=unit, next=next, passed=passed))
+        return timers
 
 
 class DbusSource(CliSource):
@@ -1164,13 +1173,14 @@ class DbusSource(CliSource):
         )
 
     @property
-    def all_timers(self) -> Generator[Source.Timer, Any, None]:
+    def _all_timers(self) -> list[Source.Timer]:
+        timers: list[Source.Timer] = []
         for (
             name,
             _,
-            load_state,
-            active_state,
-            sub_state,
+            _,
+            _,
+            _,
             _,
             unit_object_path,
             _,
@@ -1179,12 +1189,16 @@ class DbusSource(CliSource):
         ) in self.__manager.ListUnits():
             if name.endswith(".timer"):
                 accessor = self.__get_timer(unit_object_path)
-
-                yield Source.Timer(
-                    name=name,
-                    next=self._to_seconds(accessor.get("NextElapseUSecMonotonic")),
-                    passed=self._to_seconds(accessor.get("LastTriggerUSecMonotonic")),
+                timers.append(
+                    Source.Timer(
+                        name=name,
+                        next=self._to_seconds(accessor.get("NextElapseUSecMonotonic")),
+                        passed=self._to_seconds(
+                            accessor.get("LastTriggerUSecMonotonic")
+                        ),
+                    )
                 )
+        return timers
 
 
 class OptionContainer:
@@ -1399,10 +1413,7 @@ class TimersResource(Resource):
         self.source = source
 
     def probe(self) -> Generator[Metric, None, None]:
-        for timer in self.source.all_timers:
-            if Source.NameFilter.match(timer.name, opts.exclude):
-                continue
-
+        for timer in self.source.timers.filter(exclude=opts.exclude):
             state = Ok
             if timer.next is None:
                 if timer.passed is None:
@@ -1412,7 +1423,6 @@ class TimersResource(Resource):
                     state = Critical
                 elif timer.passed >= opts.timers_warning:
                     state = Warn
-
             yield Metric(name=timer.name, value=state, context="timers")
 
 
@@ -1933,7 +1943,7 @@ def main() -> None:
     else:
         source = CliSource()
     source.set_user(opts.user)
-    units = source.all_units
+    units = source.units
 
     if opts.include_unit is not None:
         unit = source.get_unit(opts.include_unit)

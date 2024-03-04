@@ -39,7 +39,7 @@ class TestScopeTimers:
     def test_dead_timers_2(self) -> None:
         result = execute_with_opt_t(stdout_timers_suffix="2")
         result.assert_critical()
-        result.assert_first_line("SYSTEMD CRITICAL - dfm-auto-jf.timer, " "rsync.timer")
+        result.assert_first_line("SYSTEMD CRITICAL - dfm-auto-jf.timer, rsync.timer")
 
     def test_dead_timers_2_ok(self) -> None:
         result = execute_with_opt_t(

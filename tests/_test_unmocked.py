@@ -19,19 +19,19 @@ def dbus() -> DbusSource:
 
 class TestPropertyAllUnits:
     def test_cli(self, cli: Source) -> None:
-        assert cli.all_units.count > 0
+        assert cli.units.count > 0
 
     def test_cli_user(self, cli: Source) -> None:
         cli.set_user(True)
-        assert cli.all_units.count > 0
+        assert cli.units.count > 0
 
     def test_compare(self, cli: Source, dbus: Source) -> None:
-        assert cli.all_units.count == dbus.all_units.count
+        assert cli.units.count == dbus.units.count
 
     def test_compare_user(self, cli: Source, dbus: DbusSource) -> None:
         cli.set_user(True)
         dbus.set_user(True)
-        assert cli.all_units.count == dbus.all_units.count
+        assert cli.units.count == dbus.units.count
 
 
 class TestGetUnit:
@@ -68,8 +68,11 @@ class TestPropertyStartupTime:
 
 class TestPropertyAllTimers:
     def test_dbus(self, dbus: Source) -> None:
-        for timer in dbus.all_timers:
+        for timer in dbus.timers.filter():
             print(timer)
+
+    def test_compare(self, cli: Source, dbus: Source) -> None:
+        assert cli.timers.count == dbus.timers.count
 
 
 class TestDbus:
