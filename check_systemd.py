@@ -60,6 +60,7 @@ import argparse
 import logging
 import re
 import subprocess
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -619,21 +620,27 @@ class Source:
     def set_user(self, user: bool) -> None:
         self._user = user
 
+    @abstractmethod
     def get_unit(self, name: str) -> Source.Unit:
         ...
 
-    def get_all_units(self) -> Generator[Source.Unit, Any, None]:
+    @property
+    @abstractmethod
+    def _all_units(self) -> Generator[Source.Unit, Any, None]:
         ...
 
-    def get_all_units_cached(self) -> Source.Cache[Source.Unit]:
+    @property
+    def all_units(self) -> Source.Cache[Source.Unit]:
         cache: Source.Cache[Source.Unit] = Source.Cache()
-        for unit in self.get_all_units():
+        for unit in self._all_units:
             cache.add(unit.name, unit)
         return cache
 
+    @abstractmethod
     def get_startup_time(self) -> float | None:
         ...
 
+    @abstractmethod
     def get_all_timers(self) -> Generator[Source.Timer, Any, None]:
         ...
 
@@ -880,7 +887,8 @@ class CliSource(Source):
             load_state=properties["LoadState"],
         )
 
-    def get_all_units(self) -> Generator[Source.Unit, None, None]:
+    @property
+    def _all_units(self) -> Generator[Source.Unit, None, None]:
         command = ["systemctl", "list-units", "--all"]
         if self._user:
             command += ["--user"]
@@ -993,9 +1001,11 @@ class DbusSource(CliSource):
         """The job object path"""
 
     class Manager:
+        @abstractmethod
         def GetUnit(self, format: str, name: str) -> str:
             ...
 
+        @abstractmethod
         def ListUnits(self) -> list[DbusSource.UnitTuple]:
             ...
 
@@ -1004,6 +1014,7 @@ class DbusSource(CliSource):
         there might be more unit names loaded than actual units behind them.
         The array consists of structures with the following elements:"""
 
+        @abstractmethod
         def GetDefaultTarget(self) -> str:
             ...
 
@@ -1089,7 +1100,8 @@ class DbusSource(CliSource):
             load_state=accessor.load_state,
         )
 
-    def get_all_units(self, user: bool = False) -> Generator[Source.Unit, None, None]:
+    @property
+    def _all_units(self) -> Generator[Source.Unit, None, None]:
         for (
             name,
             _,
@@ -1881,7 +1893,7 @@ def main() -> None:
     else:
         source = CliSource()
     source.set_user(opts.user)
-    units = source.get_all_units_cached()
+    units = source.all_units
 
     if opts.include_unit is not None:
         unit = source.get_unit(opts.include_unit)

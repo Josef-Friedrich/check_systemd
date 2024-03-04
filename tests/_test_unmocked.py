@@ -17,47 +17,21 @@ def dbus() -> DbusSource:
     return DbusSource()
 
 
-class TestGetAllUnits:
+class TestPropertyAllUnits:
     def test_cli(self, cli: Source) -> None:
-        for unit in cli.get_all_units():
-            assert unit
+        assert cli.all_units.count > 0
 
     def test_cli_user(self, cli: Source) -> None:
         cli.set_user(True)
-        for unit in cli.get_all_units():
-            assert unit
-
-    def test_dbus(self, dbus: Source) -> None:
-        for unit in dbus.get_all_units():
-            assert unit
-
-    def test_dbus_user(self, dbus: Source) -> None:
-        dbus.set_user(True)
-        for unit in dbus.get_all_units():
-            assert unit
+        assert cli.all_units.count > 0
 
     def test_compare(self, cli: Source, dbus: Source) -> None:
-        list_cli = list(cli.get_all_units())
-        list_dbus = list(dbus.get_all_units())
-        assert len(list_cli) == len(list_dbus)
+        assert cli.all_units.count == dbus.all_units.count
 
     def test_compare_user(self, cli: Source, dbus: DbusSource) -> None:
         cli.set_user(True)
         dbus.set_user(True)
-        list_cli = list(cli.get_all_units())
-        list_dbus = list(dbus.get_all_units())
-        assert len(list_cli) == len(list_dbus)
-
-
-class TestGetAllUnitsCached:
-    def test_cli(self, cli: Source) -> None:
-        cache = cli.get_all_units_cached()
-        assert cache.count > 0
-
-    def test_cli_user(self, cli: Source) -> None:
-        cli.set_user(True)
-        cache = cli.get_all_units_cached()
-        assert cache.count > 0
+        assert cli.all_units.count == dbus.all_units.count
 
 
 class TestGetUnit:
