@@ -99,6 +99,7 @@ is_dbus = True
 try:
     # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
     from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
+    from gi.repository.GLib import Variant
 except ImportError:
     # Fallback to the command line interface source.
     is_dbus = False
@@ -1020,8 +1021,10 @@ class CliSource(Source):
         return timers
 
 
-class DbusSource(CliSource):
+class GiSource(CliSource):
     """
+    Data source via D-Bus using the ``gi`` (GObject introspection) package.
+
     TODO Intherit from DataSource if the full Dbus Api is implemented
 
     This class holds the main entry point object of the D-Bus systemd API. See
@@ -1067,7 +1070,7 @@ class DbusSource(CliSource):
             ...
 
         @abstractmethod
-        def ListUnits(self) -> list[DbusSource.UnitTuple]:
+        def ListUnits(self) -> list[GiSource.UnitTuple]:
             ...
 
         """ListUnits() returns an array of all currently loaded units.
@@ -1111,6 +1114,94 @@ class DbusSource(CliSource):
         @property
         def load_state(self) -> str:
             return self.get("LoadState")
+
+    class Proxy:
+        _object_path: str
+        _interface_name: str
+        _user: bool = False
+
+        def __init__(
+            self, object_path: str, interface_name: str, user: bool = False
+        ) -> None:
+            self._object_path = object_path
+            self._interface_name = interface_name
+            self._user = user
+
+        @property
+        def _bus_type(self) -> BusType:
+            if not BusType:
+                raise Exception("The package PyGObject (gi) is not available.")
+            return BusType.SESSION if self._user else BusType.SYSTEM
+
+        @property
+        def _proxy(self) -> DBusProxy:
+            if not DBusProxy or not DBusProxyFlags:
+                raise Exception("The package PyGObject (gi) is not available.")
+            return DBusProxy.new_for_bus_sync(
+                self._bus_type,
+                DBusProxyFlags.NONE,
+                None,
+                "org.freedesktop.systemd1",
+                self._object_path,
+                self._interface_name,
+                None,
+            )
+
+        def _get(self, name: str) -> Any:
+            variant = self._proxy.get_cached_property(name)
+            if variant is not None:
+                value = variant.unpack()
+                logger.verbose(
+                    "Get property '%s' from object path %s of interface %s: %s",
+                    name,
+                    self._object_path,
+                    self._interface_name,
+                    value,
+                )
+                return value
+
+        @property
+        def object_path(self) -> str:
+            return self._object_path
+
+        @property
+        def interface_name(self) -> str:
+            return self._interface_name
+
+    class ManagerProxy(Proxy):
+        def __init__(self, user: bool = False) -> None:
+            super().__init__(
+                "/org/freedesktop/systemd1", "org.freedesktop.systemd1.Manager", user
+            )
+
+        def get_object_path(self, name: str) -> str:
+            return self._proxy.GetUnit("(s)", name)  # type: ignore
+            # return self._proxy.call_sync('GetUnit', Variant('(s)', name), DBusCallFlags.NONE, -1, None)
+
+    class UnitProxy(Proxy):
+        def __init__(
+            self,
+            name: Optional[str] = None,
+            object_path: Optional[str] = None,
+            user: bool = False,
+        ) -> None:
+            if not object_path and name:
+                object_path = GiSource.ManagerProxy(user).get_object_path(name)
+            if not object_path:
+                raise ValueError("Either name or object_path must be set.")
+            super().__init__(object_path, "org.freedesktop.systemd1.Unit", user)
+
+        @property
+        def active_state(self) -> str:
+            return self._get("ActiveState")
+
+        @property
+        def sub_state(self) -> str:
+            return self._get("SubState")
+
+        @property
+        def load_state(self) -> str:
+            return self._get("LoadState")
 
     class ProxyWrapper:
         """Wrap an D-Bus proxy object."""
@@ -1171,21 +1262,21 @@ class DbusSource(CliSource):
         )
 
     @property
-    def __manager(self) -> DbusSource.Manager:
-        return cast(DbusSource.Manager, self.__manager_proxy)
+    def __manager(self) -> GiSource.Manager:
+        return cast(GiSource.Manager, self.__manager_proxy)
 
     def __get_object_path(self, name: str) -> str:
         return self.__manager.GetUnit("(s)", name)
 
-    def __get_unit(self, name: str) -> DbusSource.Accessor:
-        return DbusSource.Accessor(
+    def __get_unit(self, name: str) -> GiSource.Accessor:
+        return GiSource.Accessor(
             self.__get_proxy(
                 self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
             )
         )
 
-    def __get_timer(self, object_path: str) -> DbusSource.TimerProxy:
-        return DbusSource.TimerProxy(
+    def __get_timer(self, object_path: str) -> GiSource.TimerProxy:
+        return GiSource.TimerProxy(
             self.__get_proxy(object_path, "org.freedesktop.systemd1.Timer")
         )
 
@@ -1225,7 +1316,7 @@ class DbusSource(CliSource):
 
     @property
     def __userspace_timestamp_monotonic(self) -> int:
-        unit = DbusSource.Accessor(self.__manager_proxy)
+        unit = GiSource.Accessor(self.__manager_proxy)
         return unit.get("UserspaceTimestampMonotonic")
 
     @property
@@ -2018,7 +2109,7 @@ def main() -> None:
 
     source: Source
     if opts.data_source == "dbus":
-        source = DbusSource()
+        source = GiSource()
     else:
         source = CliSource()
     source.set_user(opts.user)
