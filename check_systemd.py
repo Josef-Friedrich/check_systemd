@@ -1181,12 +1181,12 @@ class GiSource(CliSource):
         @property
         def last(self) -> int:
             """Timestamp in microseconds"""
-            return self._timer_proxy.get("LastTriggerUSec")
+            return self._timer_proxy.get("LastTriggerUSecMonotonic")
 
         @property
         def next(self) -> int:
             """Timestamp in microseconds"""
-            return self._timer_proxy.get("NextElapseUSecRealtime")
+            return self._timer_proxy.get("NextElapseUSecMonotonic")
 
     __system_manager: Optional[ManagerProxy] = None
     __user_manager: Optional[ManagerProxy] = None
