@@ -70,6 +70,33 @@ Project pages
 Behind the scenes
 -----------------
 
+dbus
+^^^^
+
+- ``gi``: Python 3 bindings for gobject-introspection libraries
+   GObject is an abstraction layer that allows programming with an object
+   paradigm that is compatible with many languages. It is a part of Glib,
+   the core library used to build GTK+ and GNOME.
+   `Website <https://gnome.pages.gitlab.gnome.org/pygobject/index.html>`_
+   `Repo <https://gitlab.gnome.org/GNOME/pygobject>`_
+   `PyPI (PyGObject) <https://pypi.org/project/PyGObject/>`_
+   `Stubs <https://pypi.org/project/PyGObject-stubs/>`_
+   `Ubuntu (python3-gi) <https://packages.ubuntu.com/search?keywords=python3-gi>`_
+   `Debian (python3-gi) <https://packages.debian.org/search?keywords=python3-gi>`_
+
+- ``dbus``: simple interprocess messaging system (Python 3 interface)
+   D-Bus is a message bus, used for sending messages between applications.
+   Conceptually, it fits somewhere in between raw sockets and CORBA in
+   terms of complexity.
+   `Website <https://www.freedesktop.org/wiki/Software/dbus/>`_
+   `Repo <https://gitlab.freedesktop.org/dbus/dbus-python>`_
+   `PyPI (dbus-python) <https://pypi.org/project/dbus-python/>`_
+   `Ubuntu (python3-dbus) <https://packages.ubuntu.com/search?keywords=python3-dbus>`_
+   `Debian (python3-dbus) <https://packages.debian.org/search?keywords=python3-dbus>`_
+
+Command line interface (cli) parsing:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 To detect failed units this monitoring script runs:
 
 .. code:: sh
