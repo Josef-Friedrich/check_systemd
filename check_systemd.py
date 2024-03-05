@@ -663,13 +663,11 @@ class Source:
         self._user = user
 
     @abstractmethod
-    def get_unit(self, name: str) -> Source.Unit:
-        ...
+    def get_unit(self, name: str) -> Source.Unit: ...
 
     @property
     @abstractmethod
-    def _all_units(self) -> Generator[Source.Unit, Any, None]:
-        ...
+    def _all_units(self) -> Generator[Source.Unit, Any, None]: ...
 
     @property
     def units(self) -> Source.Cache[Source.Unit]:
@@ -680,13 +678,11 @@ class Source:
 
     @property
     @abstractmethod
-    def startup_time(self) -> float | None:
-        ...
+    def startup_time(self) -> float | None: ...
 
     @property
     @abstractmethod
-    def _all_timers(self) -> list[Source.Timer]:
-        ...
+    def _all_timers(self) -> list[Source.Timer]: ...
 
     @property
     def timers(self) -> Source.Cache[Source.Timer]:
@@ -1064,61 +1060,11 @@ class GiSource(CliSource):
         job_object_path: str
         """The job object path, for example ``/``"""
 
-    class Manager:
-        @abstractmethod
-        def GetUnit(self, format: str, name: str) -> str:
-            ...
-
-        @abstractmethod
-        def ListUnits(self) -> list[GiSource.UnitTuple]:
-            ...
-
-        """ListUnits() returns an array of all currently loaded units.
-        Note that units may be known by multiple names at the same name, and hence
-        there might be more unit names loaded than actual units behind them.
-        The array consists of structures with the following elements:"""
-
-        @abstractmethod
-        def GetDefaultTarget(self) -> str:
-            ...
-
-    class Accessor:
-        """Wrap an D-Bus proxy object."""
-
-        __proxy: DBusProxy
-
-        def __init__(self, proxy: DBusProxy) -> None:
-            self.__proxy = proxy
-
-        def get(self, name: str) -> Any:
-            variant = self.__proxy.get_cached_property(name)
-            if variant is not None:
-                value = variant.unpack()
-                logger.verbose(
-                    "Get property '%s' from object path %s of interface %s: %s",
-                    name,
-                    self.__proxy.get_object_path(),
-                    self.__proxy.get_interface_name(),
-                    value,
-                )
-                return value
-
-        @property
-        def active_state(self) -> str:
-            return self.get("ActiveState")
-
-        @property
-        def sub_state(self) -> str:
-            return self.get("SubState")
-
-        @property
-        def load_state(self) -> str:
-            return self.get("LoadState")
-
     class Proxy:
         _object_path: str
         _interface_name: str
         _user: bool = False
+        __proxy: Optional[DBusProxy] = None
 
         def __init__(
             self, object_path: str, interface_name: str, user: bool = False
@@ -1135,19 +1081,21 @@ class GiSource(CliSource):
 
         @property
         def _proxy(self) -> DBusProxy:
-            if not DBusProxy or not DBusProxyFlags:
-                raise Exception("The package PyGObject (gi) is not available.")
-            return DBusProxy.new_for_bus_sync(
-                self._bus_type,
-                DBusProxyFlags.NONE,
-                None,
-                "org.freedesktop.systemd1",
-                self._object_path,
-                self._interface_name,
-                None,
-            )
+            if self.__proxy is None:
+                if not DBusProxy or not DBusProxyFlags:
+                    raise Exception("The package PyGObject (gi) is not available.")
+                self.__proxy = DBusProxy.new_for_bus_sync(
+                    self._bus_type,
+                    DBusProxyFlags.NONE,
+                    None,
+                    "org.freedesktop.systemd1",
+                    self._object_path,
+                    self._interface_name,
+                    None,
+                )
+            return self.__proxy
 
-        def _get(self, name: str) -> Any:
+        def get(self, name: str) -> Any:
             variant = self._proxy.get_cached_property(name)
             if variant is not None:
                 value = variant.unpack()
@@ -1174,9 +1122,21 @@ class GiSource(CliSource):
                 "/org/freedesktop/systemd1", "org.freedesktop.systemd1.Manager", user
             )
 
+        @property
+        def default_target(self) -> str:
+            return self._proxy.GetDefaultTarget()  # type: ignore
+
+        @property
+        def userspace_timestamp_monotonic(self) -> int:
+            return self.get("UserspaceTimestampMonotonic")
+
         def get_object_path(self, name: str) -> str:
             return self._proxy.GetUnit("(s)", name)  # type: ignore
             # return self._proxy.call_sync('GetUnit', Variant('(s)', name), DBusCallFlags.NONE, -1, None)
+
+        @property
+        def units(self) -> list[GiSource.UnitTuple]:
+            return self._proxy.ListUnits()  # type: ignore
 
     class UnitProxy(Proxy):
         def __init__(
@@ -1186,108 +1146,65 @@ class GiSource(CliSource):
             user: bool = False,
         ) -> None:
             if not object_path and name:
-                object_path = GiSource.ManagerProxy(user).get_object_path(name)
+                object_path = GiSource.get_manager(user).get_object_path(name)
             if not object_path:
                 raise ValueError("Either name or object_path must be set.")
             super().__init__(object_path, "org.freedesktop.systemd1.Unit", user)
 
         @property
         def active_state(self) -> str:
-            return self._get("ActiveState")
+            return self.get("ActiveState")
 
         @property
         def sub_state(self) -> str:
-            return self._get("SubState")
+            return self.get("SubState")
 
         @property
         def load_state(self) -> str:
-            return self._get("LoadState")
+            return self.get("LoadState")
 
-    class ProxyWrapper:
-        """Wrap an D-Bus proxy object."""
+        @property
+        def active_enter_timestamp_monotonic(self) -> int:
+            return self.get("ActiveEnterTimestampMonotonic")
 
-        __proxy: DBusProxy
+    class TimerProxy(UnitProxy):
+        __timer_proxy: Optional[GiSource.Proxy] = None
 
-        def __init__(self, proxy: DBusProxy) -> None:
-            self.__proxy = proxy
-
-        def _get(self, name: str) -> Any:
-            variant = self.__proxy.get_cached_property(name)
-            if variant is not None:
-                value = variant.unpack()
-                logger.verbose(
-                    "Get property '%s' from object path %s of interface %s: %s",
-                    name,
-                    self.__proxy.get_object_path(),
-                    self.__proxy.get_interface_name(),
-                    value,
+        @property
+        def _timer_proxy(self) -> GiSource.Proxy:
+            if not self.__timer_proxy:
+                self.__timer_proxy = GiSource.Proxy(
+                    self._object_path, "org.freedesktop.systemd1.Timer", self._user
                 )
-                return value
+            return self.__timer_proxy
 
-    class TimerProxy(ProxyWrapper):
         @property
         def last(self) -> int:
             """Timestamp in microseconds"""
-            return self._get("LastTriggerUSec")
+            return self._timer_proxy.get("LastTriggerUSec")
 
         @property
         def next(self) -> int:
             """Timestamp in microseconds"""
-            return self._get("NextElapseUSecRealtime")
+            return self._timer_proxy.get("NextElapseUSecRealtime")
+
+    __system_manager: Optional[ManagerProxy] = None
+    __user_manager: Optional[ManagerProxy] = None
+
+    @classmethod
+    def get_manager(cls, user: bool = False) -> ManagerProxy:
+        if user:
+            if not cls.__user_manager:
+                cls.__user_manager = cls.ManagerProxy(user)
+            return cls.__user_manager
+        else:
+            if not cls.__system_manager:
+                cls.__system_manager = cls.ManagerProxy(user)
+            return cls.__system_manager
 
     @property
-    def __bus_type(self) -> BusType:
-        if not BusType:
-            raise Exception("The package PyGObject (gi) is not available.")
-        return BusType.SESSION if self._user else BusType.SYSTEM
-
-    def __get_proxy(self, object_path: str, interface_name: str) -> DBusProxy:
-        if not DBusProxy or not DBusProxyFlags:
-            raise Exception("The package PyGObject (gi) is not available.")
-        return DBusProxy.new_for_bus_sync(
-            self.__bus_type,
-            DBusProxyFlags.NONE,
-            None,
-            "org.freedesktop.systemd1",
-            object_path,
-            interface_name,
-            None,
-        )
-
-    @property
-    def __manager_proxy(self) -> DBusProxy:
-        return self.__get_proxy(
-            "/org/freedesktop/systemd1",
-            "org.freedesktop.systemd1.Manager",
-        )
-
-    @property
-    def __manager(self) -> GiSource.Manager:
-        return cast(GiSource.Manager, self.__manager_proxy)
-
-    def __get_object_path(self, name: str) -> str:
-        return self.__manager.GetUnit("(s)", name)
-
-    def __get_unit(self, name: str) -> GiSource.Accessor:
-        return GiSource.Accessor(
-            self.__get_proxy(
-                self.__get_object_path(name), "org.freedesktop.systemd1.Unit"
-            )
-        )
-
-    def __get_timer(self, object_path: str) -> GiSource.TimerProxy:
-        return GiSource.TimerProxy(
-            self.__get_proxy(object_path, "org.freedesktop.systemd1.Timer")
-        )
-
-    def get_unit(self, name: str) -> Source.Unit:
-        accessor = self.__get_unit(name)
-        return Source.Unit(
-            name,
-            active_state=accessor.active_state,
-            sub_state=accessor.sub_state,
-            load_state=accessor.load_state,
-        )
+    def manager(self) -> ManagerProxy:
+        return self.get_manager(self._user)
 
     @property
     def _all_units(self) -> Generator[Source.Unit, None, None]:
@@ -1302,7 +1219,7 @@ class GiSource(CliSource):
             _,
             _,
             _,
-        ) in self.__manager.ListUnits():
+        ) in self.manager.units:
             yield self.Unit(
                 name=name,
                 active_state=active_state,
@@ -1311,18 +1228,9 @@ class GiSource(CliSource):
             )
 
     @property
-    def __default_target(self) -> str:
-        return self.__manager.GetDefaultTarget()
-
-    @property
-    def __userspace_timestamp_monotonic(self) -> int:
-        unit = GiSource.Accessor(self.__manager_proxy)
-        return unit.get("UserspaceTimestampMonotonic")
-
-    @property
     def startup_time(self) -> float | None:
         """`src/analyze/analyze-time-data.c <https://github.com/systemd/systemd/blob/1f901c24530fb9b111126381a6ea101af8040e65/src/analyze/analyze-time-data.c#L141-L197>`"""
-        unit = self.__get_unit(self.__default_target)
+        unit = GiSource.UnitProxy(self.manager.default_target)
         # ... ActiveEnterTimestamp,
         # ActiveEnterTimestampMonotonic ... contain
         # CLOCK_REALTIME and CLOCK_MONOTONIC 64-bit microsecond timestamps of
@@ -1330,11 +1238,11 @@ class GiSource(CliSource):
         # state, .... The fields are 0 in case
         # such a transition has not yet been recorded on this boot.
 
-        enter_timestamp = unit.get("ActiveEnterTimestampMonotonic")
+        enter_timestamp = unit.active_enter_timestamp_monotonic
         if not enter_timestamp:
             return None
         return self._round_1(
-            (enter_timestamp - self.__userspace_timestamp_monotonic) / 1_000_000
+            (enter_timestamp - self.manager.userspace_timestamp_monotonic) / 1_000_000
         )
 
     @property
@@ -1351,9 +1259,9 @@ class GiSource(CliSource):
             _,
             _,
             _,
-        ) in self.__manager.ListUnits():
+        ) in self.manager.units:
             if name.endswith(".timer"):
-                timer = self.__get_timer(unit_object_path)
+                timer = GiSource.TimerProxy(object_path=unit_object_path)
 
                 def _to_timestamp(usec: int) -> Optional[int]:
                     result: Optional[int] = None

@@ -71,23 +71,56 @@ class TestPropertyTimers:
         for timer in gi.timers:
             assert timer.name
 
-    @pytest.mark.skip(reason="Fix later")
+    # @pytest.mark.skip(reason="Fix later")
     def test_compare(self, cli: Source, gi: Source) -> None:
         assert cli.timers.count == gi.timers.count
         assert list(gi.timers) == list(cli.timers)
 
 
 class TestClassGiSource:
-    def test_subclass_unit_proxy(
-        self,
-    ) -> None:
+    class TestClassUnitProxy:
         unit = GiSource.UnitProxy(name="ssh.service")
 
-        assert unit.object_path == "/org/freedesktop/systemd1/unit/ssh_2eservice"
-        assert unit.interface_name == "org.freedesktop.systemd1.Unit"
-        assert unit.active_state == "active"
-        assert unit.sub_state == "running"
-        assert unit.load_state == "loaded"
+        def test_property_object_path(self) -> None:
+            assert (
+                self.unit.object_path == "/org/freedesktop/systemd1/unit/ssh_2eservice"
+            )
 
-    def test_method_get_userspace_timestamp_monotonic(self, gi: GiSource) -> None:
-        assert gi._GiSource__userspace_timestamp_monotonic > 0  # type: ignore
+        def test_property_interface_name(self) -> None:
+            assert self.unit.interface_name == "org.freedesktop.systemd1.Unit"
+
+        def test_property_active_state(self) -> None:
+            assert self.unit.active_state == "active"
+
+        def test_property_sub_state(self) -> None:
+            assert self.unit.sub_state == "running"
+
+        def test_property_load_state(self) -> None:
+            assert self.unit.load_state == "loaded"
+
+        def test_active_enter_timestamp_monotonic(self) -> None:
+            assert self.unit.active_enter_timestamp_monotonic > 0
+
+    class TestClassManagerProxy:
+        manager = GiSource.ManagerProxy()
+
+        def test_property_object_path(self) -> None:
+            assert self.manager.object_path == "/org/freedesktop/systemd1"
+
+        def test_property_interface_name(self) -> None:
+            assert self.manager.interface_name == "org.freedesktop.systemd1.Manager"
+
+        def test_property_default_target(self) -> None:
+            assert self.manager.default_target == "graphical.target"
+
+        def test_property_userspace_timestamp_monotonic(self) -> None:
+            assert self.manager.userspace_timestamp_monotonic > 0
+
+        def test_method_get_object_path(self) -> None:
+            assert (
+                self.manager.get_object_path("ssh.service")
+                == "/org/freedesktop/systemd1/unit/ssh_2eservice"
+            )
+
+        def test_method_list_units(self) -> None:
+            assert isinstance(self.manager.units[0][0], str)
