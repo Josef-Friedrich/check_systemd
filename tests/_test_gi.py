@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
 
@@ -18,6 +16,6 @@ proxy = DBusProxy.new_for_bus_sync(
 )
 
 
-print(proxy.GetAll("(ss)", "org.freedesktop.systemd1.Timer", "NextElapseUSecMonotonic"))
+print(proxy.GetAll("(ss)", "org.freedesktop.systemd1.Timer", "NextElapseUSecMonotonic"))  # type: ignore
 
-print(proxy.Get("(ss)", "org.freedesktop.systemd1.Timer", "NextElapseUSecMonotonic"))
+print(proxy.Get("(ss)", "org.freedesktop.systemd1.Timer", "NextElapseUSecMonotonic"))  # type: ignore
