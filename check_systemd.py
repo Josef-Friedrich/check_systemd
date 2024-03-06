@@ -99,7 +99,6 @@ is_dbus = True
 try:
     # Look for gi https://gnome.pages.gitlab.gnome.org/pygobject
     from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
-    from gi.repository.GLib import Variant
 except ImportError:
     # Fallback to the command line interface source.
     is_dbus = False
@@ -663,11 +662,13 @@ class Source:
         self._user = user
 
     @abstractmethod
-    def get_unit(self, name: str) -> Source.Unit: ...
+    def get_unit(self, name: str) -> Source.Unit:
+        ...
 
     @property
     @abstractmethod
-    def _all_units(self) -> Generator[Source.Unit, Any, None]: ...
+    def _all_units(self) -> Generator[Source.Unit, Any, None]:
+        ...
 
     @property
     def units(self) -> Source.Cache[Source.Unit]:
@@ -678,11 +679,13 @@ class Source:
 
     @property
     @abstractmethod
-    def startup_time(self) -> float | None: ...
+    def startup_time(self) -> float | None:
+        ...
 
     @property
     @abstractmethod
-    def _all_timers(self) -> list[Source.Timer]: ...
+    def _all_timers(self) -> list[Source.Timer]:
+        ...
 
     @property
     def timers(self) -> Source.Cache[Source.Timer]:
@@ -1000,18 +1003,21 @@ class CliSource(Source):
         timers: list[Source.Timer] = []
         if stdout:
             table_parser = CliSource.Table(stdout)
-            table_parser.check_header(("unit", "next", "last"))
+            table_parser.check_header(("unit", "left", "passed"))
 
             for row in table_parser.list_rows():
                 name = row["unit"]
 
-                next: Optional[float] = None
-                last: Optional[float] = None
+                next: Optional[int] = None
+                last: Optional[int] = None
 
-                if row["next"] != "n/a":
-                    next = CliSource.__convert_to_timestamp(row["next"])
-                if row["last"] != "n/a":
-                    last = CliSource.__convert_to_timestamp(row["last"])
+                def convert(value: str) -> int:
+                    return int(CliSource.__convert_to_sec(value))
+
+                if row["left"] != "n/a":
+                    next = convert(row["left"])
+                if row["passed"] != "n/a":
+                    last = convert(row["passed"])
 
                 timers.append(Source.Timer(name=name, next=next, last=last))
         return timers
@@ -1493,13 +1499,12 @@ class TimersResource(Resource):
     def probe(self) -> Generator[Metric, None, None]:
         for timer in self.source.timers.filter(exclude=opts.exclude):
             state = Ok
-            now = int(datetime.now().timestamp())
             if timer.next is None:
                 if timer.last is None:
                     state = Critical
-                elif now - timer.last >= opts.timers_critical:
+                elif timer.last >= opts.timers_critical:
                     state = Critical
-                elif now - timer.last >= opts.timers_warning:
+                elif timer.last >= opts.timers_warning:
                     state = Warn
             yield Metric(name=timer.name, value=state, context="timers")
 
