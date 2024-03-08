@@ -376,21 +376,22 @@ class Source:
         def __check_active_state(state: object) -> ActiveState:
             states: tuple[ActiveState] = get_args(ActiveState)
             if state in states:
-                return state
+                # https://github.com/python/mypy/issues/9718
+                return state  # type: ignore
             raise ValueError(f"Invalid active state: {state}")
 
         @staticmethod
         def __check_sub_state(state: object) -> SubState:
             states: tuple[SubState] = get_args(SubState)
             if state in states:
-                return state
+                return state  # type: ignore
             raise ValueError(f"Invalid sub state: {state}")
 
         @staticmethod
         def __check_load_state(state: object) -> LoadState:
             states: tuple[LoadState] = get_args(LoadState)
             if state in states:
-                return state
+                return state  # type: ignore
             raise ValueError(f"Invalid load state: {state}")
 
         def __init__(
@@ -860,9 +861,9 @@ class CliSource(Source):
             raise CheckError(stderr)
 
         if stdout:
-            stdout = stdout.decode("utf-8")
-            logger.verbose("stdout:\n%s", stdout)
-            return stdout
+            result = stdout.decode("utf-8")
+            logger.verbose("stdout:\n%s", result)
+            return result
         return None
 
     @staticmethod
@@ -894,7 +895,7 @@ class CliSource(Source):
             "s": 1,
             "ms": 0.001,
         }
-        result = 0
+        result: float = 0
         for span in fmt_timespan.split():
             match = re.search(r"([\d\.]+)([a-z]+)", span)
             if match:
@@ -1081,7 +1082,7 @@ class GiSource(CliSource):
 
         @property
         def _bus_type(self) -> BusType:
-            if not BusType:
+            if not BusType is not None:
                 raise Exception("The package PyGObject (gi) is not available.")
             return BusType.SESSION if self._user else BusType.SYSTEM
 
