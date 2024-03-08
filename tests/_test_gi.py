@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 from gi.repository.Gio import BusType, DBusProxy, DBusProxyFlags
 
 proxy = DBusProxy.new_for_bus_sync(
