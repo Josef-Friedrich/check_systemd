@@ -1,0 +1,6 @@
+[Unit]
+Description=Example Service (to test check_systemd.py)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tail -f /var/log/syslog

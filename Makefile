@@ -37,4 +37,7 @@ lint:
 pin_docs_requirements:
 	pip-compile --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
 
+copy_example_systemd_units:
+	sudo cp -r tests/unit-files/* /etc/systemd/system/
+
 .PHONY: test install install_editable update build publish format docs readme lint pin_docs_requirements

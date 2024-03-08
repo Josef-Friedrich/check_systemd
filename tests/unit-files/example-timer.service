@@ -1,0 +1,6 @@
+[Unit]
+Description=Corresponding Service for the Example Timer (to test check_systemd.py)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cat /etc/os-release
