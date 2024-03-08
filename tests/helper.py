@@ -221,7 +221,7 @@ def execute_main(
         file_stdout: io.StringIO = io.StringIO()
         file_stderr: io.StringIO = io.StringIO()
         with redirect_stdout(file_stdout), redirect_stderr(file_stderr):
-            check_systemd.main()
+            check_systemd.main()  # type: ignore
 
     return MockResult(
         sys_exit_mock=sys_exit,
@@ -233,11 +233,3 @@ def execute_main(
 class Expected:
     startup_time = "startup_time=12.345;60;120"
     """``startup_time=12.345;60;120``"""
-
-
-def debug(msg):
-    file_object = open("debug.txt", "a")
-    file_object.write("\n---\n")
-
-    file_object.write(msg)
-    file_object.close()

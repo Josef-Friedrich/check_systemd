@@ -12,4 +12,4 @@ class TestDbus:
         with patch("sys.exit"), patch("check_systemd.is_dbus"), patch(
             "sys.argv", ["check_systemd.py", "--dbus"]
         ):
-            check_systemd.main()
+            check_systemd.main()  # type: ignore

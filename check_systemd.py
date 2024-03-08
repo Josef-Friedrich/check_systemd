@@ -67,6 +67,7 @@ from typing import (
     Any,
     Generator,
     Generic,
+    Iterable,
     Literal,
     MutableSequence,
     NamedTuple,
@@ -76,6 +77,7 @@ from typing import (
     Union,
     cast,
     get_args,
+    overload,
 )
 
 try:
@@ -1394,9 +1396,18 @@ class SystemdUnitTypesList(MutableSequence[str]):
     def __delitem__(self, index: int | slice) -> None:
         del self.unit_types[index]
 
-    def __setitem__(self, index: int | slice, unit_type: str) -> None:
-        self.__check_type(unit_type)
-        self.unit_types[index] = unit_type
+    @overload
+    def __setitem__(self, index: int, unit_type: str) -> None:
+        ...
+
+    @overload
+    def __setitem__(self, index: slice, unit_type: Iterable[str]) -> None:
+        ...
+
+    def __setitem__(self, index: int | slice, unit_type: str | Iterable[str]) -> None:
+        if isinstance(index, int) and isinstance(unit_type, str):
+            self.__check_type(unit_type)
+            self.unit_types[index] = unit_type
 
     def __str__(self) -> str:
         return str(self.unit_types)
@@ -2059,4 +2070,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main()  # type: ignore
