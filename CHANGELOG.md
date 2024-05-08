@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.0...HEAD)</small>
 
+### Changed
+
+- Updated `contrib/icinga2/command.conf` to support latest commands and harmonize with Icinga 2 ITL upstream.
+  The two variables `systemd_dead_timer_warning` and `systemd_dead_timer_critical` were renamed to `systemd_dead_timers_warning` and `systemd_dead_timers_critical`, respectively.
+
 ## [v4.1.0] - 2024-03-01
 
 <small>[Compare with v0.4.0](https://github.com/Josef-Friedrich/check_systemd/compare/v4.0.0...v4.1.0)</small>
