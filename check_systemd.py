@@ -665,13 +665,11 @@ class Source:
         self._user = user
 
     @abstractmethod
-    def get_unit(self, name: str) -> Source.Unit:
-        ...
+    def get_unit(self, name: str) -> Source.Unit: ...
 
     @property
     @abstractmethod
-    def _all_units(self) -> Generator[Source.Unit, Any, None]:
-        ...
+    def _all_units(self) -> Generator[Source.Unit, Any, None]: ...
 
     @property
     def units(self) -> Source.Cache[Source.Unit]:
@@ -682,13 +680,11 @@ class Source:
 
     @property
     @abstractmethod
-    def startup_time(self) -> float | None:
-        ...
+    def startup_time(self) -> float | None: ...
 
     @property
     @abstractmethod
-    def _all_timers(self) -> list[Source.Timer]:
-        ...
+    def _all_timers(self) -> list[Source.Timer]: ...
 
     @property
     def timers(self) -> Source.Cache[Source.Timer]:
@@ -1397,12 +1393,10 @@ class SystemdUnitTypesList(MutableSequence[str]):
         del self.unit_types[index]
 
     @overload
-    def __setitem__(self, index: int, unit_type: str) -> None:
-        ...
+    def __setitem__(self, index: int, unit_type: str) -> None: ...
 
     @overload
-    def __setitem__(self, index: slice, unit_type: Iterable[str]) -> None:
-        ...
+    def __setitem__(self, index: slice, unit_type: Iterable[str]) -> None: ...
 
     def __setitem__(self, index: int | slice, unit_type: str | Iterable[str]) -> None:
         if isinstance(index, int) and isinstance(unit_type, str):
