@@ -333,15 +333,39 @@ class Logger:
         self.__logger.log(level, msg, *a)
 
     def info(self, msg: str, *args: object) -> None:
-        """Log on debug level 1: ``-d``"""
+        """Log on debug level ``1``: ``-d``.
+
+        :param msg: A message format string. Note that this means that you can
+            use keywords in the format string, together with a single
+            dictionary argument. No ``%`` formatting operation is performed on
+            ``msg`` when no args are supplied.
+        :param args: The arguments which are merged into ``msg`` using the
+            string formatting operator.
+        """
         self.__log(self.__INFO, self.__BLUE, msg, *args)
 
     def debug(self, msg: str, *args: object) -> None:
-        """Log on debug level 2: ``-dd``"""
+        """Log on debug level ``2``: ``-dd``.
+
+        :param msg: A message format string. Note that this means that you can
+            use keywords in the format string, together with a single
+            dictionary argument. No ``%`` formatting operation is performed on
+            ``msg`` when no args are supplied.
+        :param args: The arguments which are merged into ``msg`` using the
+            string formatting operator.
+        """
         self.__log(self.__DEBUG, self.__PURPLE, msg, *args)
 
     def verbose(self, msg: str, *args: object) -> None:
-        """Log on debug level 3: ``-ddd``"""
+        """Log on debug level ``3``: ``-ddd``
+
+        :param msg: A message format string. Note that this means that you can
+            use keywords in the format string, together with a single
+            dictionary argument. No ``%`` formatting operation is performed on
+            ``msg`` when no args are supplied.
+        :param args: The arguments which are merged into ``msg`` using the
+            string formatting operator.
+        """
         self.__log(self.__VERBOSE, self.__CYAN, msg, *args)
 
     def show_levels(self) -> None:
