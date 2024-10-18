@@ -1982,7 +1982,10 @@ def get_argparser() -> argparse.ArgumentParser:
 
     # Performance data ########################################################
 
-    perf_data = parser.add_argument_group("Performance data")
+    perf_data = parser.add_argument_group(
+        "Performance data",
+        "By default performance data is attached."
+    )
     perf_data_exclusive_group = perf_data.add_mutually_exclusive_group()
 
     perf_data_exclusive_group.add_argument(
@@ -1991,7 +1994,7 @@ def get_argparser() -> argparse.ArgumentParser:
         dest="performance_data",
         action="store_true",
         default=True,
-        help="Attach no performance data to the plugin output.",
+        help="Attach performance data to the plugin output.",
     )
 
     perf_data_exclusive_group.add_argument(
@@ -1999,7 +2002,7 @@ def get_argparser() -> argparse.ArgumentParser:
         "--no-performance-data",
         dest="performance_data",
         action="store_false",
-        help="Attach performance data to the plugin output.",
+        help="Attach no performance data to the plugin output.",
     )
 
     return parser
