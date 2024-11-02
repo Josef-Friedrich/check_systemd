@@ -1111,7 +1111,7 @@ class GiSource(CliSource):
         @property
         def _proxy(self) -> DBusProxy:
             if self.__proxy is None:
-                if not DBusProxy or not DBusProxyFlags:
+                if DBusProxy is None or DBusProxyFlags is None:
                     raise Exception("The package PyGObject (gi) is not available.")
                 self.__proxy = DBusProxy.new_for_bus_sync(
                     self._bus_type,
