@@ -62,8 +62,8 @@ Packages
    (`package <https://gitlab.com/msfgitlab/check_systemd_build_rpm/-/jobs/artifacts/main/raw/output/check_systemd-1.0-1.x86_64.rpm?job=release_rpm>`__,
    `source code <https://gitlab.com/msfgitlab/check_systemd_build_rpm>`__,
    `binary <https://gitlab.com/msfgitlab/check_systemd_build_rpm/-/jobs/artifacts/main/raw/output/check_systemd?job=release_rpm>`__):
-   This package includes one single binary compiled with the Python compiler Nuitka, including all dependencies. 
-   The package is built via GitLab CI as a nightly release and is considered experimental. 
+   This package includes one single binary compiled with the Python compiler Nuitka, including all dependencies.
+   The package is built via GitLab CI as a nightly release and is considered experimental.
    ``curl -L -o check_systemd-1.0-1.x86_64.rpm "https://gitlab.com/msfgitlab/check_systemd_build_rpm/-/jobs/artifacts/main/raw/output/check_systemd-1.0-1.x86_64.rpm?job=release_rpm" && sudo dnf install -y ./check_systemd-1.0-1.x86_64.rpm``
 
 Command line interface
@@ -205,22 +205,22 @@ dbus
    GObject is an abstraction layer that allows programming with an object
    paradigm that is compatible with many languages. It is a part of Glib,
    the core library used to build GTK+ and GNOME.
-   `Website <https://gnome.pages.gitlab.gnome.org/pygobject/index.html>`_
-   `Repo <https://gitlab.gnome.org/GNOME/pygobject>`_
-   `PyPI (PyGObject) <https://pypi.org/project/PyGObject/>`_
-   `Stubs <https://pypi.org/project/PyGObject-stubs/>`_
-   `Ubuntu (python3-gi) <https://packages.ubuntu.com/search?keywords=python3-gi>`_
-   `Debian (python3-gi) <https://packages.debian.org/search?keywords=python3-gi>`_
+   `Website <https://gnome.pages.gitlab.gnome.org/pygobject/index.html>`__
+   `Repo <https://gitlab.gnome.org/GNOME/pygobject>`__
+   `PyPI (PyGObject) <https://pypi.org/project/PyGObject/>`__
+   `Stubs <https://pypi.org/project/PyGObject-stubs/>`__
+   `Ubuntu (python3-gi) <https://packages.ubuntu.com/search?keywords=python3-gi>`__
+   `Debian (python3-gi) <https://packages.debian.org/search?keywords=python3-gi>`__
 
 - ``dbus``: simple interprocess messaging system (Python 3 interface)
    D-Bus is a message bus, used for sending messages between applications.
    Conceptually, it fits somewhere in between raw sockets and CORBA in
    terms of complexity.
-   `Website <https://www.freedesktop.org/wiki/Software/dbus/>`_
-   `Repo <https://gitlab.freedesktop.org/dbus/dbus-python>`_
-   `PyPI (dbus-python) <https://pypi.org/project/dbus-python/>`_
-   `Ubuntu (python3-dbus) <https://packages.ubuntu.com/search?keywords=python3-dbus>`_
-   `Debian (python3-dbus) <https://packages.debian.org/search?keywords=python3-dbus>`_
+   `Website <https://www.freedesktop.org/wiki/Software/dbus/>`__
+   `Repo <https://gitlab.freedesktop.org/dbus/dbus-python>`__
+   `PyPI (dbus-python) <https://pypi.org/project/dbus-python/>`__
+   `Ubuntu (python3-dbus) <https://packages.ubuntu.com/search?keywords=python3-dbus>`__
+   `Debian (python3-dbus) <https://packages.debian.org/search?keywords=python3-dbus>`__
 
 Command line interface (cli) parsing:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
