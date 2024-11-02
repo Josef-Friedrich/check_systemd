@@ -7,12 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.0...HEAD)</small>
+<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.1...HEAD)</small>
+
+## [v4.1.1] - 2024-11-02
+
+<small>[Compare with v0.4.0](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.0...v4.1.1)</small>
+
+### Added
+
+- Add support for Python 3.13
 
 ### Changed
 
 - Updated `contrib/icinga2/command.conf` to support latest commands and harmonize with Icinga 2 ITL upstream.
   The two variables `systemd_dead_timer_warning` and `systemd_dead_timer_critical` were renamed to `systemd_dead_timers_warning` and `systemd_dead_timers_critical`, respectively.
+- Fix typos in the help output
 
 ## [v4.1.0] - 2024-03-01
 
@@ -41,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove the perfdata data_source ([62fd828](https://github.com/Josef-Friedrich/check_systemd/commit/62fd828177c9372a5234314e354ca9a442e726bb) by Josef Friedrich).
+- Remove the perfdata `data_source` ([62fd828](https://github.com/Josef-Friedrich/check_systemd/commit/62fd828177c9372a5234314e354ca9a442e726bb) by Josef Friedrich).
 
 ## [v3.1.0] - 2024-01-04
 
