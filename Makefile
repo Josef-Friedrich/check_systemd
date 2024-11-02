@@ -35,6 +35,7 @@ lint:
 	poetry run tox -e lint
 
 pin_docs_requirements:
+	pipx install pip-tools
 	pip-compile --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
 
 copy_example_systemd_units:

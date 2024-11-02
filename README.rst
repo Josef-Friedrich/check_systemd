@@ -58,7 +58,6 @@ Packages
    (`package <https://packages.fedoraproject.org/pkgs/nagios-plugins-systemd/nagios-plugins-systemd/>`__,
    `source code <https://src.fedoraproject.org/rpms/nagios-plugins-systemd>`__):
    ``dnf install nagios-plugins-systemd``
-
 -  OracleLinux9 / RHEL9
    (`package <https://gitlab.com/msfgitlab/check_systemd_build_rpm/-/jobs/artifacts/main/raw/output/check_systemd-1.0-1.x86_64.rpm?job=release_rpm>`__,
    `source code <https://gitlab.com/msfgitlab/check_systemd_build_rpm>`__,
@@ -66,8 +65,6 @@ Packages
    This package includes one single binary compiled with the Python compiler Nuitka, including all dependencies. 
    The package is built via GitLab CI as a nightly release and is considered experimental. 
    ``curl -L -o check_systemd-1.0-1.x86_64.rpm "https://gitlab.com/msfgitlab/check_systemd_build_rpm/-/jobs/artifacts/main/raw/output/check_systemd-1.0-1.x86_64.rpm?job=release_rpm" && sudo dnf install -y ./check_systemd-1.0-1.x86_64.rpm``
-
-
 
 Command line interface
 ----------------------
@@ -174,10 +171,12 @@ Command line interface
       --user                Also show user (systemctl --user) units.
 
     Performance data:
+      By default performance data is attached.
+
       -P, --performance-data
-                            Attach no performance data to the plugin output.
-      -p, --no-performance-data
                             Attach performance data to the plugin output.
+      -p, --no-performance-data
+                            Attach no performance data to the plugin output.
 
     Performance data:
       - count_units

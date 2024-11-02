@@ -1983,8 +1983,7 @@ def get_argparser() -> argparse.ArgumentParser:
     # Performance data ########################################################
 
     perf_data = parser.add_argument_group(
-        "Performance data",
-        "By default performance data is attached."
+        "Performance data", "By default performance data is attached."
     )
     perf_data_exclusive_group = perf_data.add_mutually_exclusive_group()
 
