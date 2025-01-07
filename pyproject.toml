@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 nagiosplugin = "^1.2"
 
 [tool.poetry.group.dev.dependencies]
