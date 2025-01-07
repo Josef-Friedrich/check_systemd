@@ -210,9 +210,11 @@ def execute_main(
     """
     if not argv or argv[0] != "check_systemd.py":
         argv.insert(0, "check_systemd.py")
-    with mock.patch("sys.exit") as sys_exit, mock.patch(
-        "check_systemd.subprocess.Popen"
-    ) as Popen, mock.patch("sys.argv", argv):
+    with (
+        mock.patch("sys.exit") as sys_exit,
+        mock.patch("check_systemd.subprocess.Popen") as Popen,
+        mock.patch("sys.argv", argv),
+    ):
         if popen:
             Popen.side_effect = popen
         else:

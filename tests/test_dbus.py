@@ -9,7 +9,9 @@ import check_systemd
 
 class TestDbus:
     def test_mocking(self) -> None:
-        with patch("sys.exit"), patch("check_systemd.is_dbus"), patch(
-            "sys.argv", ["check_systemd.py", "--dbus"]
+        with (
+            patch("sys.exit"),
+            patch("check_systemd.is_dbus"),
+            patch("sys.argv", ["check_systemd.py", "--dbus"]),
         ):
             check_systemd.main()  # type: ignore
