@@ -38,6 +38,7 @@ Sphinx = "^7"
 sphinx-rtd-theme = "^2"
 tox = "^4"
 twine = "^5"
+mypy = "^1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -48,3 +49,7 @@ check_systemd = "check_systemd:main"
 
 [tool.pyright]
 reportMissingModuleSource = false
+reportPrivateImportUsage = "none"
+reportUnusedImport = "information"
+reportUnusedExpression = "information"
+reportImportCycles = "information"

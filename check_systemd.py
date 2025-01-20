@@ -1438,7 +1438,7 @@ class SystemdUnitTypesList(MutableSequence[str]):
     def __check_type(self, type: str) -> None:
         if type not in self.__all_types:
             raise ValueError(
-                "The given type '{}' is not a valid systemd " "unit type.".format(type)
+                "The given type '{}' is not a valid systemd unit type.".format(type)
             )
 
     def convert_to_regexp(self):
