@@ -933,21 +933,22 @@ class CliSource(Source):
         )
 
     def get_unit(self, name: str) -> Source.Unit:
-        stdout = CliSource.__execute_cli(
-            [
-                "systemctl",
-                "show",
-                "--property",
-                "Id",
-                "--property",
-                "ActiveState",
-                "--property",
-                "SubState",
-                "--property",
-                "LoadState",
-                name,
-            ]
-        )
+        command = [
+            "systemctl",
+            "show",
+            "--property",
+            "Id",
+            "--property",
+            "ActiveState",
+            "--property",
+            "SubState",
+            "--property",
+            "LoadState",
+            name,
+        ]
+        if self._user:
+            command += ["--user"]
+        stdout = CliSource.__execute_cli(command)
         if stdout is None:
             raise CheckSystemdError(f"The unit '{name}' couldn't be found.")
         rows = stdout.splitlines()
