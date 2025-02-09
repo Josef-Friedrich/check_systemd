@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.1...HEAD)</small>
+<small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v5.0.0...HEAD)</small>
+
+## [v5.0.0] - 2025-02-09
+
+<small>[Compare with v0.4.1](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.1...v5.0.0)</small>
+
+### Changed
+
+- Drop support for Python 3.8 because of its end of life
+
+### Fixed
+
+- Fix the --user option when checking a single user service (#42)
 
 ## [v4.1.1] - 2024-11-02
 

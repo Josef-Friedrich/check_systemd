@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "check_systemd"
-version = "4.1.1"
+version = "5.0.0"
 description = "Nagios / Icinga monitoring plugin to check systemd for failed units."
 authors = ["Josef Friedrich <josef@friedrich.rocks>"]
 readme = "README.rst"
@@ -13,7 +13,6 @@ classifiers = [
   "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
