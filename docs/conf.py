@@ -20,7 +20,6 @@ release: str = get_version("check_systemd")
 language = "en"
 exclude_patterns = ["_build"]
 pygments_style = "sphinx"
-html_static_path = []
 htmlhelp_basename = "checksystemddoc"
 
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autodoc_default_options
