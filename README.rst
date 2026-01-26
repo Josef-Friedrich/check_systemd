@@ -249,23 +249,6 @@ relevant for text output are:
 `basic/time-util.c <https://github.com/systemd/systemd/blob/main/src/basic/time-util.c>`__,
 `analyze/analyze.c <https://github.com/systemd/systemd/blob/main/src/analyze/analyze.c>`__.
 
-Testing
--------
-
-::
-
-   pyenv install 3.6.12
-   pyenv install 3.7.9
-   pyenv local 3.6.12 3.7.9
-   pip3 install tox
-   tox
-
-Test a single test case:
-
-::
-
-   tox -e py38 -- test/test_scope_timers.py:TestScopeTimers.test_all_n_a
-
 Deploying
 ---------
 

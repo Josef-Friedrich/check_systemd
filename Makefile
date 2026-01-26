@@ -36,7 +36,7 @@ format:
 docs:
 	uv run --isolated readme-patcher
 	rm -rf docs/_build
-	uv tool run --isolated --from sphinx --with sphinx_rtd_theme sphinx-build -W -q docs docs/_build
+	uv tool run --isolated --from sphinx --with check_systemd --with sphinx_rtd_theme sphinx-build -W -q docs docs/_build
 	xdg-open docs/_build/index.html
 
 pin_docs_requirements:
@@ -47,7 +47,7 @@ lint:
 	uv run ruff check
 
 type_check:
-	uv run mypy typings src/python_boilerplate tests
+	uv run mypy check_systemd.py tests
 
 copy_example_systemd_units:
 	sudo cp -r tests/unit-files/* /etc/systemd/system/
