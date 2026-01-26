@@ -5,9 +5,9 @@ version: 2
 
 # https://docs.readthedocs.io/en/stable/config-file/v2.html#build
 build:
-  os: "ubuntu-22.04"
+  os: "ubuntu-24.04"
   tools:
-    python: "3.10"
+    python: "3.14"
 
 # https://docs.readthedocs.io/en/stable/config-file/v2.html#sphinx
 sphinx:
@@ -16,6 +16,7 @@ sphinx:
 # https://docs.readthedocs.io/en/stable/config-file/v2.html#python
 python:
   install:
+    # pip-compile --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
     - requirements: docs/requirements.txt
     - method: pip
       path: .

@@ -1,50 +1,52 @@
-[tool.poetry]
+[project]
 name = "check_systemd"
 version = "5.0.0"
 description = "Nagios / Icinga monitoring plugin to check systemd for failed units."
-authors = ["Josef Friedrich <josef@friedrich.rocks>"]
+authors = [{ name = "Josef Friedrich", email = "josef@friedrich.rocks" }]
+requires-python = ">=3.9,<4"
 readme = "README.rst"
 license = "LGPL-2.1-only"
-repository = "https://github.com/Josef-Friedrich/check_systemd"
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Environment :: Plugins",
-  "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Operating System :: POSIX :: Linux",
-  "Topic :: System :: Networking :: Monitoring",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Plugins",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: System :: Networking :: Monitoring",
+]
+dependencies = ["nagiosplugin>=1.2,<2"]
+
+[project.urls]
+Repository = "https://github.com/Josef-Friedrich/check_systemd"
+
+[project.scripts]
+check_systemd = "check_systemd:main"
+
+[dependency-groups]
+dev = [
+    "nagiosplugin-stubs>=0.6.4,<0.7",
+    "pygobject-stubs>=2,<3",
+    "pytest>=8,<9",
+    "readme-patcher>=0,<1",
+    "ruff>=0,<1",
+    "mypy>=1,<2",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-nagiosplugin = "^1.2"
-
-[tool.poetry.group.dev.dependencies]
-nagiosplugin-stubs = "^0.6.4"
-# PyGObject = "^3" # Slow tests on GitHub Actions and publishing to PyPI failed
-pygobject-stubs = "^2"
-pytest = "^8"
-readme-patcher = "^0"
-ruff = "^0"
-Sphinx = "^7"
-sphinx-rtd-theme = "^2"
-tox = "^4"
-twine = "^5"
-mypy = "^1"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.poetry.scripts]
-check_systemd = "check_systemd:main"
+[tool.uv.build-backend]
+module-name = "check_systemd"
+module-root = ""
+namespace = true
 
 [tool.pyright]
 reportMissingModuleSource = false
