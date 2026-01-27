@@ -30,13 +30,17 @@ publish:
 	uv publish
 
 format:
-	uv run ruff check --select I --fix .
-	uv run ruff format
+	uv tool run ruff check --select I --fix .
+	uv tool run ruff format
 
-docs:
-	uv run --isolated readme-patcher
+docs: docs_readme_patcher docs_sphinx
+
+docs_readme_patcher:
+	uv tool run --isolated readme-patcher
+
+docs_sphinx:
 	rm -rf docs/_build
-	uv tool run --isolated --from sphinx --with check_systemd --with sphinx_rtd_theme sphinx-build -W -q docs docs/_build
+	uv tool run --isolated --from sphinx --with check_systemd --with sphinx_rtd_theme --with sphinx-argparse sphinx-build -W -q docs docs/_build
 	xdg-open docs/_build/index.html
 
 pin_docs_requirements:
@@ -44,12 +48,10 @@ pin_docs_requirements:
 	uv run pip-compile --strip-extras --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
 
 lint:
-	uv run ruff check
+	uv tool run ruff check
 
 type_check:
-	uv run mypy check_systemd.py tests
+	uv tool run mypy check_systemd.py tests
 
 copy_example_systemd_units:
 	sudo cp -r tests/unit-files/* /etc/systemd/system/
-
-.PHONY: test install install_editable update upgrade build publish format docs lint pin_docs_requirements

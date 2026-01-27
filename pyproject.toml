@@ -34,9 +34,6 @@ dev = [
     "nagiosplugin-stubs>=0.6.4,<0.7",
     "pygobject-stubs>=2,<3",
     "pytest>=8,<9",
-    "readme-patcher>=0,<1",
-    "ruff>=0,<1",
-    "mypy>=1,<2",
 ]
 
 [build-system]
