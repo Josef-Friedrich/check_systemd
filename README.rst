@@ -129,14 +129,15 @@ Command line interface
 
     Timers related options:
       -t, --timers, --dead-timers
-                            Detect dead / inactive timers. See the corresponding
-                            options '-W, --dead-timer-warning' and '-C, --dead-
-                            timers-critical'. Dead timers are detected by parsing
-                            the output of 'systemctl list-timers'. Dead timer rows
-                            displaying 'n/a' in the NEXT and LEFT columns and the
-                            time span in the column PASSED exceeds the values
-                            specified with the options '-W, --dead-timer-warning'
-                            and '-C, --dead-timers-critical'.
+                            Detect dead / inactive timers. A timer is dead when it
+                            has no next run. A dead timer that never ran triggers a
+                            critical state. A dead timer that ran before triggers a
+                            warning or critical state when the time since its last
+                            run reaches the value of '-W, --timers-warning' or '-C,
+                            --timers-critical'. The timers are read from 'systemctl
+                            list-timers --all --output=json'. systemd 245 and older
+                            ignore '--output' and print a text table, which is
+                            parsed instead.
       -W, --timers-warning, --dead-timers-warning SECONDS
                             Time ago in seconds for dead / inactive timers to
                             trigger a warning state (by default 6 days).
@@ -239,7 +240,9 @@ To find dead timers this plugin launches:
 
 .. code:: sh
 
-   systemctl list-timers --all
+   systemctl list-timers --all --output=json
+
+systemd 245 and older ignore ``--output`` and print a text table instead.
 
 To learn how ``systemd`` produces the text output on the command line,
 it is worthwhile to take a look at ``systemd``\ ’s source code. Files

@@ -121,7 +121,9 @@ To find dead timers this plugin launches:
 
 .. code:: sh
 
-   systemctl list-timers --all
+   systemctl list-timers --all --output=json
+
+systemd 245 and older ignore ``--output`` and print a text table instead.
 
 To learn how ``systemd`` produces the text output on the command line,
 it is worthwhile to take a look at ``systemd``\ ’s source code. Files

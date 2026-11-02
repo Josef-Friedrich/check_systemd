@@ -57,9 +57,11 @@ Presentation (``Summary``)
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import re
 import subprocess
+import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -1011,10 +1013,41 @@ class CliSource(Source):
                 return self._round_1(CliSource.__convert_to_sec(match.group(1)))
         return None
 
+    @staticmethod
+    def __read_timers_json(stdout: str) -> list[Source.Timer]:
+        """Read the timers from the output of
+        ``systemctl list-timers --all --output=json`` (systemd 246 and later).
+
+        ``next`` and ``last`` are microseconds since the epoch. ``next`` is
+        ``null`` for a timer that has no next run, and ``last`` is ``0`` for a
+        timer that never ran. Both are converted to the values that the text
+        table shows in its LEFT and PASSED columns: the seconds until the next
+        run and the seconds since the last run.
+        """
+        now = time.time()
+        timers: list[Source.Timer] = []
+        for row in json.loads(stdout):
+            next: int | None = None
+            last: int | None = None
+            if row["next"]:
+                next = int(row["next"] / 1_000_000 - now)
+            if row["last"]:
+                last = int(now - row["last"] / 1_000_000)
+            timers.append(Source.Timer(name=row["unit"], next=next, last=last))
+        return timers
+
     @property
     def _all_timers(self) -> list[Source.Timer]:
         """https://github.com/systemd/systemd/blob/e0270bab43a4c37028ee32ae853037df22999767/src/systemctl/systemctl-list-units.c#L641-L689"""
-        stdout = CliSource.__execute_cli(["systemctl", "list-timers", "--all"])
+        stdout = CliSource.__execute_cli(
+            ["systemctl", "list-timers", "--all", "--output=json"]
+        )
+        if stdout and stdout.startswith("["):
+            return CliSource.__read_timers_json(stdout)
+
+        # systemd 245 and older ignore --output and print the text table. This
+        # parsing needs their layout: a timestamp that is not set is n/a, and
+        # all columns are aligned to the left.
 
         # NEXT                          LEFT
         # Sat 2020-05-16 15:11:15 CEST  34min left
@@ -1512,9 +1545,10 @@ class UnitsContext(Context):
 
 class TimersResource(Resource):
     """
-    Resource that calls ``systemctl list-timers --all`` on the command line to
-    get informations about dead / inactive timers. There is one type of systemd
-    “degradation” which is normally not detected: dead / inactive timers.
+    Resource that calls ``systemctl list-timers --all --output=json`` on the
+    command line to get informations about dead / inactive timers. There is
+    one type of systemd “degradation” which is normally not detected: dead /
+    inactive timers.
 
     :param list excludes: A list of systemd unit names to exclude from the
       checks.
@@ -1875,15 +1909,14 @@ def get_argparser() -> argparse.ArgumentParser:
         "--dead-timers",
         dest="scope_timers",
         action="store_true",
-        help="Detect dead / inactive timers. See the corresponding options "
-        "'-W, --dead-timer-warning' and "
-        "'-C, --dead-timers-critical'. "
-        "Dead timers are detected by parsing the output of "
-        "'systemctl list-timers'. "
-        "Dead timer rows displaying 'n/a' in the NEXT and LEFT "
-        "columns and the time span in the column PASSED exceeds the "
-        "values specified with the options '-W, --dead-timer-warning' "
-        "and '-C, --dead-timers-critical'.",
+        help="Detect dead / inactive timers. A timer is dead when it has no "
+        "next run. A dead timer that never ran triggers a critical state. "
+        "A dead timer that ran before triggers a warning or critical state "
+        "when the time since its last run reaches the value of "
+        "'-W, --timers-warning' or '-C, --timers-critical'. "
+        "The timers are read from "
+        "'systemctl list-timers --all --output=json'. systemd 245 and older "
+        "ignore '--output' and print a text table, which is parsed instead.",
     )
 
     timers.add_argument(

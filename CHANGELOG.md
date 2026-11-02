@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <small>[Compare with latest](https://github.com/Josef-Friedrich/check_systemd/compare/v5.0.0...HEAD)</small>
 
+### Fixed
+
+- Fix the detection of dead timers on systemd 252 and later, which the timers check reported as OK. The check now reads `systemctl list-timers --all --output=json` instead of the text table, whose layout changed in systemd 252 and 254. systemd 245 and older ignore `--output`, so their text table is still parsed.
+
 ## [v5.0.0] - 2025-02-09
 
 <small>[Compare with v0.4.1](https://github.com/Josef-Friedrich/check_systemd/compare/v4.1.1...v5.0.0)</small>
