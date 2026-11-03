@@ -1,0 +1,15 @@
+NEXT                            LEFT LAST                               PASSED UNIT                         ACTIVATES
+Mon 2026-11-02 20:39:00 UTC 4min 47s Mon 2026-11-02 20:09:01 UTC     25min ago phpsessionclean.timer        phpsessionclean.service
+Mon 2026-11-02 20:40:05 UTC     5min Mon 2026-11-02 20:32:01 UTC  2min 11s ago logrotate.timer              logrotate.service
+Tue 2026-11-03 00:00:00 UTC 3h 25min Mon 2026-11-02 00:00:00 UTC       20h ago dpkg-db-backup.timer         dpkg-db-backup.service
+Tue 2026-11-03 00:51:23 UTC 4h 17min Mon 2026-11-02 00:00:48 UTC       20h ago man-db.timer                 man-db.service
+Tue 2026-11-03 03:34:20 UTC       7h Mon 2026-11-02 10:33:57 UTC       10h ago apt-daily.timer              apt-daily.service
+Tue 2026-11-03 03:45:47 UTC       7h Mon 2026-11-02 03:45:47 UTC       16h ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Fri 2026-11-06 09:45:28 UTC   3 days Fri 2026-10-30 13:59:14 UTC    3 days ago apt-daily-upgrade.timer      apt-daily-upgrade.service
+Sun 2026-11-08 03:10:28 UTC   5 days Sun 2026-11-01 03:10:54 UTC 1 day 17h ago e2scrub_all.timer            e2scrub_all.service
+Sun 2026-11-08 03:10:42 UTC   5 days Sun 2026-11-01 03:10:43 UTC 1 day 17h ago xfs_scrub_all.timer          xfs_scrub_all.service
+Mon 2026-11-09 01:01:34 UTC   6 days Mon 2026-11-02 00:04:24 UTC       20h ago fstrim.timer                 fstrim.service
+-                                  - -                                       - dead-test.timer              dead-test.service
+-                                  - Mon 2026-11-02 20:34:08 UTC        3s ago once-test.timer              once-test.service
+
+12 timers listed.

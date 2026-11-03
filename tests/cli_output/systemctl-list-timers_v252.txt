@@ -1,0 +1,15 @@
+NEXT                        LEFT           LAST                        PASSED        UNIT                         ACTIVATES
+Mon 2026-11-02 20:40:00 UTC 3min 51s left  Mon 2026-11-02 20:30:02 UTC 6min ago      sysstat-collect.timer        sysstat-collect.service
+Tue 2026-11-03 00:00:00 UTC 3h 23min left  -                           -             dpkg-db-backup.timer         dpkg-db-backup.service
+Tue 2026-11-03 00:00:00 UTC 3h 23min left  Mon 2026-11-02 00:00:00 UTC 20h ago       logrotate.timer              logrotate.service
+Tue 2026-11-03 00:07:00 UTC 3h 30min left  -                           -             sysstat-summary.timer        sysstat-summary.service
+Tue 2026-11-03 04:04:01 UTC 7h left        Mon 2026-11-02 01:48:19 UTC 18h ago       man-db.timer                 man-db.service
+Tue 2026-11-03 04:30:47 UTC 7h left        Mon 2026-11-02 07:37:50 UTC 12h ago       apt-daily.timer              apt-daily.service
+Tue 2026-11-03 18:01:16 UTC 21h left       Mon 2026-11-02 18:01:16 UTC 2h 34min ago  systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Wed 2026-11-04 07:13:11 UTC 1 day 10h left Wed 2026-10-28 07:54:19 UTC 5 days ago    apt-daily-upgrade.timer      apt-daily-upgrade.service
+Sun 2026-11-08 03:10:42 UTC 5 days left    Sun 2026-11-01 03:10:25 UTC 1 day 17h ago e2scrub_all.timer            e2scrub_all.service
+Mon 2026-11-09 01:15:25 UTC 6 days left    Mon 2026-11-02 00:14:17 UTC 20h ago       fstrim.timer                 fstrim.service
+-                           -              -                           -             dead-test.timer              dead-test.service
+-                           -              Mon 2026-11-02 20:36:08 UTC 58ms ago      once-test.timer              once-test.service
+
+12 timers listed.

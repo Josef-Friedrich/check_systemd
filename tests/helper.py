@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import os
 import typing
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from os import path
 from unittest import TestCase, mock
 from unittest.mock import Mock
@@ -93,6 +93,36 @@ def get_mocks_for_popen(*stdout: str) -> list[Mock]:
     return mocks
 
 
+def get_popen_for_commands(outputs: dict[str, str]) -> typing.Callable[..., Mock]:
+    """
+    Create a mocked version of ``subprocess.Popen()`` that returns the output
+    of the command line it is called with, like a real host does.
+
+    Assign the result of this function to the attribute ``side_effect``:
+    ``Popen.side_effect = result_of_this_function``
+
+    :param outputs: Command lines (for example ``systemctl list-units --all``)
+      mapped to strings or to file names of text files inside the folder
+      ``cli_output``.
+
+    :return: A function that takes the arguments of ``subprocess.Popen()``
+      and returns a mock object.
+    """
+
+    def popen(args: typing.Sequence[str], **kwargs: typing.Any) -> Mock:
+        return MPopen(stdout=outputs[" ".join(args)])
+
+    return popen
+
+
+@contextmanager
+def freeze_time(timestamp: float) -> typing.Iterator[None]:
+    """Make ``time.time()`` return ``timestamp``, a number of seconds since
+    the epoch."""
+    with mock.patch("time.time", return_value=timestamp):
+        yield
+
+
 class MockResult:
     """A class to collect all results of a mocked execution of the main
     function."""
@@ -177,7 +207,7 @@ def execute_main(
         "systemctl-list-units_ok.txt",
         "systemd-analyze_12.345.txt",
     ],
-    popen: typing.Iterable[Mock] | None = None,
+    popen: typing.Iterable[Mock] | typing.Callable[..., Mock] | None = None,
 ) -> MockResult:
     """Execute the main function with a lot of patched functions and classes.
 
@@ -201,7 +231,9 @@ def execute_main(
           ``p = subprocess.Popen(['systemctl', 'is-active', self.unit]``,
           ``SystemctlIsActiveResource``
 
-    :param popen: Some mocked Popen classes.
+    :param popen: Some mocked Popen classes, or a function that returns a
+        mocked Popen class for the arguments of each call (see
+        :func:`get_popen_for_commands`).
 
     :param int analyze_returncode: The first call `systemctl analyze` to check
         if the startup process is finished
