@@ -59,14 +59,16 @@ class TestWithMocking:
 class TestWithSubprocess:
     def test_help(self) -> None:
         process = subprocess.run(
-            ["./check_systemd.py", "--help"], encoding="utf-8", stdout=subprocess.PIPE
+            ["./src/check_systemd/__init__.py", "--help"],
+            encoding="utf-8",
+            stdout=subprocess.PIPE,
         )
         assert process.returncode == 0
         assert "usage: check_systemd" in process.stdout
 
     def test_version(self) -> None:
         process = subprocess.run(
-            ["./check_systemd.py", "--version"],
+            ["./src/check_systemd/__init__.py", "--version"],
             encoding="utf-8",
             stdout=subprocess.PIPE,
         )
@@ -75,7 +77,7 @@ class TestWithSubprocess:
 
     def test_exclusive_cli_dbus(self) -> None:
         process = subprocess.run(
-            ["./check_systemd.py", "--cli", "--dbus"],
+            ["./src/check_systemd/__init__.py", "--cli", "--dbus"],
             encoding="utf-8",
             stderr=subprocess.PIPE,
         )
