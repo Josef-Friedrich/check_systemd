@@ -28,7 +28,7 @@ jobs:
       # https://docs.astral.sh/uv/guide s/integration/github/#multiple-python-versions
       - name: Install uv and set the Python version
         # https://github.com/astral-sh/setup-uv
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.13.7"
           python-version: ${{ matrix.python-version }}
