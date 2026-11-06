@@ -1,6 +1,6 @@
 [project]
 name = "check_systemd"
-version = "5.0.0"
+version = "5.0.1"
 description = "Nagios / Icinga monitoring plugin to check systemd for failed units."
 authors = [{ name = "Josef Friedrich", email = "josef@friedrich.rocks" }]
 requires-python = ">=3.9,<4"
