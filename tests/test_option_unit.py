@@ -9,7 +9,7 @@ def execute_with_opt_u(argv: list[str], list_units: str = "ok"):
     return execute_main(
         argv=argv,
         stdout=[
-            "systemctl-list-units_{}.txt".format(list_units),
+            f"systemctl-list-units_{list_units}.txt",
             "systemctl-show-nginx_active.txt",
             "systemd-analyze_12.345.txt",
         ],

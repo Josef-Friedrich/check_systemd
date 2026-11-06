@@ -7,7 +7,7 @@ def execute(argv: list[str], units_suffix: str = "ok") -> MockResult:
     return execute_main(
         argv=argv,
         stdout=[
-            "systemctl-list-units_{}.txt".format(units_suffix),
+            f"systemctl-list-units_{units_suffix}.txt",
             "systemd-analyze_12.345.txt",
         ],
     )

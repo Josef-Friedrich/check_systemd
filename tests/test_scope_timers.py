@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import pytest
 
 from tests.helper import (
@@ -63,10 +61,10 @@ def execute_on_capture(
 
 
 def execute_with_opt_t(
-    additional_argv: Optional[list[str]] = None,
+    additional_argv: list[str] | None = None,
     stdout_timers_suffix: str = "1",
-    warning: Optional[int] = None,
-    critical: Optional[int] = None,
+    warning: int | None = None,
+    critical: int | None = None,
 ) -> MockResult:
     argv = ["--timers", "--no-performance-data"]
     if warning:
@@ -82,7 +80,7 @@ def execute_with_opt_t(
         stdout=[
             "systemctl-list-units_3units.txt",
             "systemd-analyze_12.345.txt",
-            "systemctl-list-timers_{}.txt".format(stdout_timers_suffix),
+            f"systemctl-list-timers_{stdout_timers_suffix}.txt",
         ],
     )
 

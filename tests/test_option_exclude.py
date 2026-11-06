@@ -7,7 +7,7 @@ def execute_with_opt_e(argv: list[str], unit_suffix: str = "failed") -> MockResu
     return execute_main(
         argv=argv,
         stdout=[
-            "systemctl-list-units_{}.txt".format(unit_suffix),
+            f"systemctl-list-units_{unit_suffix}.txt",
             "systemd-analyze_12.345.txt",
         ],
     )

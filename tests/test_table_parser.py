@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from check_systemd import CliSource
 from tests.helper import convert_to_bytes
 
@@ -48,15 +46,15 @@ class TestTable:
 
     def test_get_row_all(self) -> None:
         parser = get_parser()
-        row: Optional[dict[str, str]] = None
-        for i in range(0, parser.row_count):
+        row: dict[str, str] | None = None
+        for i in range(parser.row_count):
             row = parser.get_row(i)
         assert row is not None
         assert "systemd-tmpfiles-clean.timer" == row["unit"]
 
     def test_list_rows(self) -> None:
         parser = get_parser()
-        row: Optional[dict[str, str]] = None
+        row: dict[str, str] | None = None
         for row in parser.list_rows():
             pass
 

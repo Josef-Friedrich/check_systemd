@@ -14,7 +14,7 @@ test: TestCase = TestCase()
 test.maxDiff = None
 
 
-class AddBin(object):
+class AddBin:
     """
     :param string bin_path: Path relative to the test folder.
     """
@@ -202,11 +202,8 @@ class MockResult:
 
 
 def execute_main(
-    argv: list[str] = ["check_systemd.py"],
-    stdout: list[str] = [
-        "systemctl-list-units_ok.txt",
-        "systemd-analyze_12.345.txt",
-    ],
+    argv: list[str] | None = None,
+    stdout: list[str] | None = None,
     popen: typing.Iterable[Mock] | typing.Callable[..., Mock] | None = None,
 ) -> MockResult:
     """Execute the main function with a lot of patched functions and classes.
@@ -240,6 +237,10 @@ def execute_main(
 
     :return: The results are assembled in the class ``MockResult``
     """
+    if stdout is None:
+        stdout = ["systemctl-list-units_ok.txt", "systemd-analyze_12.345.txt"]
+    if argv is None:
+        argv = ["check_systemd.py"]
     if not argv or argv[0] != "check_systemd.py":
         argv.insert(0, "check_systemd.py")
     with (

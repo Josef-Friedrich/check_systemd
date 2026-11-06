@@ -61,22 +61,18 @@ import json
 import logging
 import re
 import subprocess
+import sys
 import time
 from abc import abstractmethod
+from collections.abc import Generator, Iterable, Iterator, MutableSequence, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import (
     Any,
-    Generator,
     Generic,
-    Iterable,
     Literal,
-    MutableSequence,
     NamedTuple,
-    Optional,
-    Sequence,
     TypeVar,
-    Union,
     cast,
     get_args,
     overload,
@@ -96,7 +92,7 @@ try:
     from nagiosplugin.summary import Summary
 except ImportError:
     print("Failed to import the NagiosPlugin library.")
-    exit(3)
+    sys.exit(3)
 
 is_dbus = True
 
@@ -270,7 +266,6 @@ was already active).
 
 UnitType = Literal[
     "service",
-    "service",
     "socket",
     "target",
     "device",
@@ -425,9 +420,9 @@ class Source:
         def __init__(
             self,
             name: str,
-            active_state: Optional[object] = None,
-            sub_state: Optional[object] = None,
-            load_state: Optional[object] = None,
+            active_state: object | None = None,
+            sub_state: object | None = None,
+            load_state: object | None = None,
         ) -> None:
             self.name = name
             self.active_state = self.__check_active_state(active_state)
@@ -480,10 +475,10 @@ class Source:
         """
 
         name: str
-        last: Optional[int]
+        last: int | None
         """Timestamp"""
 
-        next: Optional[int]
+        next: int | None
         """Timestamp"""
 
     class NameFilter:
@@ -496,9 +491,8 @@ class Source:
         def __init__(self, unit_names: Sequence[str] = ()) -> None:
             self.__unit_names = set(unit_names)
 
-        def __iter__(self) -> Generator[str, None, None]:
-            for name in sorted(self.__unit_names):
-                yield name
+        def __iter__(self) -> Iterator[str]:
+            yield from sorted(self.__unit_names)
 
         @staticmethod
         def match(unit_name: str, regexes: str | Sequence[str]) -> bool:
@@ -519,7 +513,7 @@ class Source:
                         return True
                 except Exception:
                     raise CheckSystemdRegexpError(
-                        "Invalid regular expression: '{}'".format(regex)
+                        f"Invalid regular expression: '{regex}'"
                     )
             return False
 
@@ -555,7 +549,7 @@ class Source:
             """
             match = Source.NameFilter.match
             for name in sorted(self.__unit_names):
-                output: Optional[str] = name
+                output: str | None = name
                 if include and not match(name, include):
                     output = None
 
@@ -584,7 +578,7 @@ class Source:
             self.__units[name] = unit
             self.__name_filter.add(name)
 
-        def get(self, name: Optional[str] = None) -> T | None:
+        def get(self, name: str | None = None) -> T | None:
             if name:
                 return self.__units[name]
             return None
@@ -666,7 +660,7 @@ class Source:
         """
         name_segments = unit_name.split(".")
         interface_name = name_segments[-1]
-        return "org.freedesktop.systemd1.{}".format(interface_name.title())
+        return f"org.freedesktop.systemd1.{interface_name.title()}"
 
     @staticmethod
     def get_interface_name_from_object_path(object_path: str) -> str:
@@ -678,7 +672,7 @@ class Source:
         """
         name_segments = object_path.split("_2e")
         interface_name = name_segments[-1]
-        return "org.freedesktop.systemd1.{}".format(interface_name.title())
+        return f"org.freedesktop.systemd1.{interface_name.title()}"
 
     @staticmethod
     def is_unit_type(unit_name_or_object_path: str, type_name: UnitType) -> bool:
@@ -838,7 +832,7 @@ class CliSource(Source):
             index = 0
             for column in self.columns:
                 if column == "":
-                    key = "column_{}".format(index)
+                    key = f"column_{index}"
                 else:
                     key = column
                 result[key] = body_columns[index]
@@ -847,7 +841,7 @@ class CliSource(Source):
 
         def list_rows(self) -> Generator[dict[str, str], None, None]:
             """List all rows."""
-            for i in range(0, self.row_count):
+            for i in range(self.row_count):
                 yield self.get_row(i)
 
     @staticmethod
@@ -876,9 +870,7 @@ class CliSource(Source):
 
         if p.returncode != 0:
             raise CheckError(
-                "The command exits with a none-zero return code ({})".format(
-                    p.returncode
-                )
+                f"The command exits with a none-zero return code ({p.returncode})"
             )
 
         if stderr:
@@ -1065,8 +1057,8 @@ class CliSource(Source):
             for row in table_parser.list_rows():
                 name = row["unit"]
 
-                next: Optional[int] = None
-                last: Optional[int] = None
+                next: int | None = None
+                last: int | None = None
 
                 def convert(value: str) -> int:
                     return int(CliSource.__convert_to_sec(value))
@@ -1127,7 +1119,7 @@ class GiSource(CliSource):
         _object_path: str
         _interface_name: str
         _user: bool = False
-        __proxy: Optional[DBusProxy] = None
+        __proxy: DBusProxy | None = None
 
         def __init__(
             self, object_path: str, interface_name: str, user: bool = False
@@ -1204,8 +1196,8 @@ class GiSource(CliSource):
     class UnitProxy(Proxy):
         def __init__(
             self,
-            name: Optional[str] = None,
-            object_path: Optional[str] = None,
+            name: str | None = None,
+            object_path: str | None = None,
             user: bool = False,
         ) -> None:
             if not object_path and name:
@@ -1231,7 +1223,7 @@ class GiSource(CliSource):
             return self.get("ActiveEnterTimestampMonotonic")
 
     class TimerProxy(UnitProxy):
-        __timer_proxy: Optional[GiSource.Proxy] = None
+        __timer_proxy: GiSource.Proxy | None = None
 
         @property
         def _timer_proxy(self) -> GiSource.Proxy:
@@ -1251,8 +1243,8 @@ class GiSource(CliSource):
             """Timestamp in microseconds"""
             return self._timer_proxy.get("NextElapseUSecMonotonic")
 
-    __system_manager: Optional[ManagerProxy] = None
-    __user_manager: Optional[ManagerProxy] = None
+    __system_manager: ManagerProxy | None = None
+    __user_manager: ManagerProxy | None = None
 
     @classmethod
     def get_manager(cls, user: bool = False) -> ManagerProxy:
@@ -1326,8 +1318,8 @@ class GiSource(CliSource):
             if name.endswith(".timer"):
                 timer = GiSource.TimerProxy(object_path=unit_object_path)
 
-                def _to_timestamp(usec: int) -> Optional[int]:
-                    result: Optional[int] = None
+                def _to_timestamp(usec: int) -> int | None:
+                    result: int | None = None
                     if timer.last > 0:
                         result = self._usec_to_sec(usec)
                     return result
@@ -1352,7 +1344,7 @@ class OptionContainer:
     # scope: units
     ignore_inactive_state: bool
     include: list[str] = []
-    include_unit: Optional[str]
+    include_unit: str | None
     include_type: list[str]
     exclude: list[str] = []
     exclude_unit: list[str]
@@ -1374,7 +1366,7 @@ class OptionContainer:
     """``-c``, ``--critical``"""
 
     # backend
-    data_source: Optional[Literal["dbus", "cli"]]
+    data_source: Literal["dbus", "cli"] | None
 
     user: bool = False
     """``--user``"""
@@ -1411,20 +1403,16 @@ class CheckSystemdError(Exception):
     the decorator ``@nagiosplugin.guarded()`` on the main function and printed
     out nicely."""
 
-    pass
-
 
 class CheckSystemdRegexpError(CheckSystemdError):
     """Raised when an invalid regular expression is specified."""
-
-    pass
 
 
 class SystemdUnitTypesList(MutableSequence[str]):
     unit_types: list[str]
 
     def __init__(self, *args: str) -> None:
-        self.unit_types = list()
+        self.unit_types = []
         self.__all_types = (
             "service",
             "socket",
@@ -1471,7 +1459,7 @@ class SystemdUnitTypesList(MutableSequence[str]):
     def __check_type(self, type: str) -> None:
         if type not in self.__all_types:
             raise ValueError(
-                "The given type '{}' is not a valid systemd unit type.".format(type)
+                f"The given type '{type}' is not a valid systemd unit type."
             )
 
     def convert_to_regexp(self):
@@ -1520,11 +1508,11 @@ class UnitsContext(Context):
             unit = metric.value
             exitcode = unit.convert_to_exitcode()
             if exitcode != 0:
-                hint = "{}: {}".format(metric.name, unit.active_state)
+                hint = f"{metric.name}: {unit.active_state}"
                 return self.result_cls(exitcode, metric=metric, hint=hint)
 
         if metric.value:
-            hint = "{}: {}".format(metric.name, metric.value)
+            hint = f"{metric.name}: {metric.value}"
         else:
             hint = metric.name
 
@@ -1532,9 +1520,12 @@ class UnitsContext(Context):
         if not metric.value:
             return self.result_cls(Ok, metric=metric, hint=hint)
 
-        if opts.ignore_inactive_state and metric.value == "failed":
-            return self.result_cls(Critical, metric=metric, hint=hint)
-        elif not opts.ignore_inactive_state and metric.value != "active":
+        if (
+            opts.ignore_inactive_state
+            and metric.value == "failed"
+            or not opts.ignore_inactive_state
+            and metric.value != "active"
+        ):
             return self.result_cls(Critical, metric=metric, hint=hint)
         else:
             return self.result_cls(Ok, metric=metric, hint=hint)
@@ -1565,9 +1556,7 @@ class TimersResource(Resource):
         for timer in self.source.timers.filter(exclude=opts.exclude):
             state = Ok
             if timer.next is None:
-                if timer.last is None:
-                    state = Critical
-                elif timer.last >= opts.timers_critical:
+                if timer.last is None or timer.last >= opts.timers_critical:
                     state = Critical
                 elif timer.last >= opts.timers_warning:
                     state = Warn
@@ -1700,7 +1689,7 @@ class SystemdSummary(Summary):
         if opts.include_unit:
             for result in results.most_significant:
                 if isinstance(result.context, UnitsContext):
-                    return "{0}".format(result)
+                    return f"{result}"
         return "all"
 
     def problem(self, results: Results) -> str:
@@ -1718,7 +1707,7 @@ class SystemdSummary(Summary):
                 "timers",
             ]:
                 summary.append(result)
-        return ", ".join(["{0}".format(result) for result in summary])
+        return ", ".join([f"{result}" for result in summary])
 
     def verbose(self, results: Results) -> list[str]:
         """Provides extra lines if verbose plugin execution is requested.
@@ -1734,7 +1723,7 @@ class SystemdSummary(Summary):
                 "units",
                 "timers",
             ]:
-                summary.append("{0}: {1}".format(result.state, result))
+                summary.append(f"{result.state}: {result}")
         return summary
 
 
@@ -1742,9 +1731,9 @@ class SystemdSummary(Summary):
 
 
 def convert_to_regexp_list(
-    regexp: Optional[Sequence[str]] = None,
-    unit_names: Optional[Union[str, Sequence[str]]] = None,
-    unit_types: Optional[Sequence[str]] = None,
+    regexp: Sequence[str] | None = None,
+    unit_names: str | Sequence[str] | None = None,
+    unit_types: Sequence[str] | None = None,
 ) -> set[str]:
     result: set[str] = set()
     if regexp:
@@ -1769,13 +1758,13 @@ def get_argparser() -> argparse.ArgumentParser:
         prog="check_systemd",  # To get the right command name in the README.
         formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(
             prog, width=80
-        ),  # noqa: E501
+        ),
         description="Copyright (c) 2014-18 Andrea Briganti "
-        "<kbytesys@gmail.com>\n"  # noqa: E251
+        "<kbytesys@gmail.com>\n"
         "Copyright (c) 2019-25 Josef Friedrich <josef@friedrich.rocks>\n"
         "\n"
-        "Nagios / Icinga monitoring plugin to check systemd.\n",  # noqa: E501
-        epilog="Performance data:\n"  # noqa: E251
+        "Nagios / Icinga monitoring plugin to check systemd.\n",
+        epilog="Performance data:\n"
         "  - count_units\n"
         "  - startup_time\n"
         "  - units_activating\n"
@@ -1804,7 +1793,7 @@ def get_argparser() -> argparse.ArgumentParser:
         "-V",
         "--version",
         action="version",
-        version="%(prog)s {}".format(__version__),
+        version=f"%(prog)s {__version__}",
     )
 
     # Scope: units ############################################################
@@ -2098,7 +2087,7 @@ def main() -> None:
         unit = source.get_unit(opts.include_unit)
         units.add(unit.name, unit)
 
-    tasks: list[Union[Resource, Context, Summary]] = [
+    tasks: list[Resource | Context | Summary] = [
         UnitsResource(units),
         UnitsContext(),
         SystemdSummary(),
