@@ -48,7 +48,7 @@ pin_docs_requirements:
 	uv run pip-compile --strip-extras --output-file=docs/requirements.txt docs/requirements.in pyproject.toml
 
 lint:
-	uv tool run ruff check
+	uv tool run ruff check  --fix --unsafe-fixes
 
 type_check:
 	uv tool run mypy check_systemd.py tests

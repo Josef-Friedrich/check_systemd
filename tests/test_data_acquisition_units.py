@@ -162,19 +162,14 @@ class TestClassNameFilter:
         include: str | Sequence[str] | None = None,
         exclude: str | Sequence[str] | None = None,
     ) -> list[str]:
-        unit_names: list[str] = []
-        for unit_name in self.__filter.filter(include=include, exclude=exclude):
-            unit_names.append(unit_name)
-        return unit_names
+        return list(self.__filter.filter(include=include, exclude=exclude))
 
     def test_initialization_with_arg(self) -> None:
         filter = NameFilter(["test1.service", "test2.service"])
         assert 2 == len(filter.get())
 
     def test_iterator(self) -> None:
-        names: list[str] = []
-        for name in self.__filter:
-            names.append(name)
+        names = list(self.__filter)
         assert names == [
             "ModemManager.service",
             "mongod.service",

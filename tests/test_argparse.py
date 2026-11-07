@@ -61,6 +61,7 @@ class TestWithSubprocess:
         process = subprocess.run(
             ["./src/check_systemd/__init__.py", "--help"],
             encoding="utf-8",
+            check=False,
             stdout=subprocess.PIPE,
         )
         assert process.returncode == 0
@@ -70,6 +71,7 @@ class TestWithSubprocess:
         process = subprocess.run(
             ["./src/check_systemd/__init__.py", "--version"],
             encoding="utf-8",
+            check=False,
             stdout=subprocess.PIPE,
         )
         assert process.returncode == 0
@@ -79,6 +81,7 @@ class TestWithSubprocess:
         process = subprocess.run(
             ["./src/check_systemd/__init__.py", "--cli", "--dbus"],
             encoding="utf-8",
+            check=False,
             stderr=subprocess.PIPE,
         )
         assert process.returncode == 2
@@ -88,7 +91,10 @@ class TestWithSubprocess:
 
     def test_entry_point(self) -> None:
         process = subprocess.run(
-            ["check_systemd", "--help"], encoding="utf-8", stdout=subprocess.PIPE
+            ["check_systemd", "--help"],
+            encoding="utf-8",
+            check=False,
+            stdout=subprocess.PIPE,
         )
         assert process.returncode == 0
         assert "check_systemd" in process.stdout

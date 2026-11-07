@@ -829,14 +829,12 @@ class CliSource(Source):
 
             result: dict[str, str] = {}
 
-            index = 0
-            for column in self.columns:
+            for index, column in enumerate(self.columns):
                 if column == "":
                     key = f"column_{index}"
                 else:
                     key = column
                 result[key] = body_columns[index]
-                index += 1
             return result
 
         def list_rows(self) -> Generator[dict[str, str], None, None]:
@@ -1318,7 +1316,7 @@ class GiSource(CliSource):
             if name.endswith(".timer"):
                 timer = GiSource.TimerProxy(object_path=unit_object_path)
 
-                def _to_timestamp(usec: int) -> int | None:
+                def _to_timestamp(usec: int, timer=timer) -> int | None:
                     result: int | None = None
                     if timer.last > 0:
                         result = self._usec_to_sec(usec)
@@ -1343,10 +1341,10 @@ class OptionContainer:
 
     # scope: units
     ignore_inactive_state: bool
-    include: list[str] = []
+    include: list[str]
     include_unit: str | None
     include_type: list[str]
-    exclude: list[str] = []
+    exclude: list[str]
     exclude_unit: list[str]
     exclude_type: list[str]
     expected_state: str | None
@@ -1737,8 +1735,8 @@ def convert_to_regexp_list(
 ) -> set[str]:
     result: set[str] = set()
     if regexp:
-        for regexp in regexp:
-            result.add(regexp)
+        for pattern in regexp:
+            result.add(pattern)
 
     if unit_names:
         if isinstance(unit_names, str):

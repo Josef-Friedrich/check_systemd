@@ -31,7 +31,7 @@ class AddBin:
         BIN = os.path.abspath(os.path.join(os.path.dirname(__file__), self.bin_path))
         os.environ["PATH"] = BIN + ":" + os.environ["PATH"]
 
-    def __exit__(self) -> None:
+    def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
         os.environ["PATH"] = self.old_path
 
 
@@ -49,9 +49,8 @@ def convert_to_bytes(file_name_or_str: str) -> bytes:
     """
     output_path = get_cli_output_path(file_name_or_str)
     if os.path.exists(output_path):
-        in_file = open(output_path, "rb")
-        data = in_file.read()
-        in_file.close()
+        with open(output_path, "rb") as in_file:
+            data = in_file.read()
         return data
     else:
         return file_name_or_str.encode()
